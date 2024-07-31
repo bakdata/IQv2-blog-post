@@ -1,0 +1,24 @@
+package com.bakdata.kafka.example.read;
+
+import lombok.NonNull;
+
+import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
+public interface Service<K, V> extends AutoCloseable {
+    Optional<V> getValueForKey(final @NonNull K key);
+
+    List<V> getValuesForRange(final K lower, final K upper);
+
+
+    default Optional<V> getVersionedValueForKey(final @NonNull K key, final Instant asOfTime) {
+        return Optional.empty();
+    }
+
+    default List<V> getVersionedValuesForRange(@NonNull final K key, final Instant from, final Instant to) {
+        return Collections.emptyList();
+    }
+
+}
