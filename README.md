@@ -1,1 +1,1 @@
-# template-java-gradle
+# IQv2 Blog Post
