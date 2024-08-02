@@ -59,8 +59,9 @@ public class WriteWindowedKeyValueDataProcessorSupplier implements FixedKeyProce
             try {
                 final Order order = MAPPER.readValue(value, Order.class);
                 log.debug("Writing recoder with key '{}' and order '{}' in store '{}'", key, order, STORE);
-                final long windowStart = order.timestamp() / WINDOW_SIZE.toMillis();
-                final long windowEnd = windowStart + WINDOW_SIZE.toMillis();
+                final long timestamp = order.timestamp();
+                final long windowStart = timestamp - (timestamp % WINDOW_SIZE.toMillis());
+                final long windowEnd = windowStart + WINDOW_SIZE.toMillis() - 1;
                 final int orderCount = this.fetchOrderCountFrom(order, windowStart, windowEnd) + 1;
                 this.windowStore.put(order.menuItem(), orderCount, windowStart);
             } catch (final JsonProcessingException e) {

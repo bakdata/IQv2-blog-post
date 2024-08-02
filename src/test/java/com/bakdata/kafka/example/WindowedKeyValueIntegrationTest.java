@@ -1,23 +1,20 @@
 package com.bakdata.kafka.example;
 
 import com.bakdata.kafka.example.read.Service;
-import net.mguenther.kafka.junit.*;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.common.serialization.StringSerializer;
-import org.assertj.core.api.SoftAssertions;
-import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
+import lombok.NonNull;
+import net.mguenther.kafka.junit.KeyValue;
 import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import java.time.Instant;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-
-import static com.bakdata.kafka.example.KeyValueStoreApplication.MENU_ITEM_DESCRIPTION_TOPIC;
-import static net.mguenther.kafka.junit.EmbeddedKafkaCluster.provisionWith;
+import java.util.stream.Stream;
 
 @ExtendWith(SoftAssertionsExtension.class)
 class WindowedKeyValueIntegrationTest extends AbstractIntegrationTest {
@@ -44,6 +41,10 @@ class WindowedKeyValueIntegrationTest extends AbstractIntegrationTest {
                         "{\"menuItem\": \"Pizza\", \"timestamp\": 7200002}"
                 ),
                 new KeyValue<>(
+                        "Pizza",
+                        "{\"menuItem\": \"Pizza\", \"timestamp\": 7200003}"
+                ),
+                new KeyValue<>(
                         "Burger",
                         "{\"menuItem\": \"Burger\", \"timestamp\": 3600005}"
                 ),
@@ -54,6 +55,10 @@ class WindowedKeyValueIntegrationTest extends AbstractIntegrationTest {
                 new KeyValue<>(
                         "Burger",
                         "{\"menuItem\": \"Burger\", \"timestamp\": 3600007}"
+                ),
+                new KeyValue<>(
+                        "Burger",
+                        "{\"menuItem\": \"Burger\", \"timestamp\": 3600008}"
                 )
         );
     }
@@ -64,29 +69,29 @@ class WindowedKeyValueIntegrationTest extends AbstractIntegrationTest {
         super.tearDown();
     }
 
-    @Test
-    void shouldQueryCorrectWhenKeyQueryIsRequested() throws InterruptedException {
-        Thread.sleep(3000);
-        final Optional<Integer> aggregatedOrder = this.timestampedKeyValueStoreApp
-                .getValueForKey("Pizza");
-
-        this.softly.assertThat(aggregatedOrder)
-                .hasValue(3);
+    private static Stream<Arguments> getMenuItemAndPriceAndDateTime() {
+        return Stream.of(
+                // Pizza
+                Arguments.of(new Request("Pizza", Instant.ofEpochMilli(0), Instant.ofEpochMilli(3_600_000)), Collections.emptyList()),
+                Arguments.of(new Request("Pizza", Instant.ofEpochMilli(3_600_000), Instant.ofEpochMilli(7_200_000)), List.of(3)),
+                Arguments.of(new Request("Pizza", Instant.ofEpochMilli(7_200_000), Instant.ofEpochMilli(10_800_000)), List.of(2)),
+                Arguments.of(new Request("Pizza", Instant.ofEpochMilli(0), Instant.ofEpochMilli(7_200_001)), List.of(3, 2))
+        );
     }
 
-//    @Test
-//    void shouldQueryCorrectWhenRangeQueryIsRequested() {
-//        final List<ValueAndTimestamp<String>> aggregatedOrder = this.timestampedKeyValueStoreApp
-//                .getValuesForRange("Burger", "Sandwich");
-//
-//        this.softly.assertThat(aggregatedOrder)
-//                .hasSize(3)
-//                .anySatisfy(value -> this.softly.assertThat(value)
-//                        .isEqualTo(ValueAndTimestamp.make("FALL2024",1717920300 )))
-//                .anySatisfy(value -> this.softly.assertThat(value)
-//                        .isEqualTo(ValueAndTimestamp.make("WINTER2024", 1717920100)))
-//                .anySatisfy(value -> this.softly.assertThat(value)
-//                        .isEqualTo(ValueAndTimestamp.make("SUMMER2024",1717920000 )));
-//    }
+    @ParameterizedTest
+    @MethodSource("getMenuItemAndPriceAndDateTime")
+    void shouldQueryCorrectWhenKeyQueryIsRequested(final Request request, final Collection<Integer> expected) throws InterruptedException {
+        Thread.sleep(3000);
+        final List<Integer> aggregatedOrder = this.timestampedKeyValueStoreApp
+                .getWindowedValueForKey(request.menuItem(), request.from(), request.to());
+
+        this.softly.assertThat(aggregatedOrder)
+                .hasSize(expected.size())
+                .isEqualTo(expected);
+    }
+
+    record Request(@NonNull String menuItem, @NonNull Instant from, @NonNull Instant to) {
+    }
 
 }

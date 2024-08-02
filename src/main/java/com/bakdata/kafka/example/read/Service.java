@@ -21,4 +21,16 @@ public interface Service<K, V> extends AutoCloseable {
         return Collections.emptyList();
     }
 
+    default List<V> getWindowedValueForKey(final @NonNull K key, final @NonNull Instant from, final @NonNull Instant to) {
+        return Collections.emptyList();
+    }
+
+    default List<V> getWindowedRange(final @NonNull Instant from, final @NonNull Instant to) {
+        return Collections.emptyList();
+    }
+
+    default List<V> getWindowedRangeForKey(final @NonNull K key) {
+        return Collections.emptyList();
+    }
+
 }

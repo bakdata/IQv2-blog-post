@@ -8,14 +8,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyQueryMetadata;
-import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.query.QueryResult;
-import org.apache.kafka.streams.query.RangeQuery;
 import org.apache.kafka.streams.query.StateQueryRequest;
 import org.apache.kafka.streams.query.WindowKeyQuery;
+import org.apache.kafka.streams.query.WindowRangeQuery;
 import org.apache.kafka.streams.state.WindowStoreIterator;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -35,11 +35,11 @@ public final class WindowedKeyValueOrderService implements Service<String, Integ
     }
 
     @Override
-    public Optional<Integer> getValueForKey(@NonNull final String menuItem) {
-        log.debug("Querying menueItem '{}'", menuItem);
+    public List<Integer> getWindowedValueForKey(@NonNull final String menuItem, @NonNull final Instant from, @NonNull final Instant to) {
+        log.debug("Querying menu item '{}'", menuItem);
 
         final WindowKeyQuery<String, Integer> keyQuery =
-                WindowKeyQuery.withKeyAndWindowStartRange(menuItem, Instant.ofEpochMilli(0), Instant.ofEpochMilli(7200000));
+                WindowKeyQuery.withKeyAndWindowStartRange(menuItem, from, to.minusMillis(1));
 
         final KeyQueryMetadata keyQueryMetadata = this.storage.getStreams()
                 .queryMetadataForKey(this.storage.getStoreName(), menuItem, Serdes.String().serializer());
@@ -54,18 +54,36 @@ public final class WindowedKeyValueOrderService implements Service<String, Integ
                 .query(queryRequest)
                 .getOnlyPartitionResult();
 
-        if (onlyPartitionResult != null && onlyPartitionResult.isSuccess() && onlyPartitionResult.getResult().hasNext()) {
-            final KeyValue<Long, Integer> next = onlyPartitionResult.getResult().next();
-            final int value = next.value;
-            return Optional.of(value);
+        final List<Integer> results = new ArrayList<>();
+        if (onlyPartitionResult != null && onlyPartitionResult.isSuccess()) {
+            onlyPartitionResult.getResult()
+                    .forEachRemaining(result -> results.add(result.value));
         }
-        return Optional.empty();
+        return results;
+    }
+
+    // TODO: implement
+    @Override
+    public List<Integer> getWindowedRange(@NonNull Instant from, @NonNull Instant to) {
+        WindowRangeQuery<String, Integer> rangeQuery = WindowRangeQuery.withWindowStartRange(from, to);
+        return List.of();
+    }
+
+    // TODO: implement
+    @Override
+    public List<Integer> getWindowedRangeForKey(final String key) {
+        WindowRangeQuery<String, Integer> rangeQuery = WindowRangeQuery.withKey(key);
+        return List.of();
+    }
+
+    @Override
+    public Optional<Integer> getValueForKey(@NonNull final String menuItem) {
+        throw new IllegalCallerException("Window Store can not be called for key query.");
     }
 
     @Override
     public List<Integer> getValuesForRange(final String lower, final String upper) {
-        final RangeQuery<String, String> rangeQuery = RangeQuery.withRange(lower, upper);
-        return List.of();
+        throw new IllegalCallerException("Window Store can not be called for range query.");
     }
 
     @Override
