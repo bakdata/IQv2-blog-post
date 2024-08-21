@@ -5,6 +5,8 @@ import lombok.NonNull;
 import net.mguenther.kafka.junit.KeyValue;
 import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -92,6 +94,33 @@ class WindowedKeyValueIntegrationTest extends AbstractIntegrationTest {
     }
 
     record Request(@NonNull String menuItem, @NonNull Instant from, @NonNull Instant to) {
+    }
+
+    @Test
+    void shouldQueryCorrectWhenRangeQueryIsRequested() {
+        final List<Integer> aggregatedOrder = this.timestampedKeyValueStoreApp
+                .getWindowedRange(Instant.ofEpochMilli(3600000), Instant.ofEpochMilli(3_600_010));
+
+        this.softly.assertThat(aggregatedOrder)
+                .hasSize(2)
+                .anySatisfy(countPizza -> this.softly.assertThat(countPizza)
+                        .isEqualTo(3))
+                .anySatisfy(countBurger -> this.softly.assertThat(countBurger)
+                        .isEqualTo(4));
+    }
+
+    @Test
+    @Disabled("Does not work. WindowStores only supports WindowRangeQuery.withWindowStartRange.")
+    void shouldQueryCorrectWhenRangeQueryForKeyIsRequested() {
+        final List<Integer> aggregatedOrder = this.timestampedKeyValueStoreApp
+                .getWindowedRangeForKey("Pizza");
+
+        this.softly.assertThat(aggregatedOrder)
+                .hasSize(2)
+                .anySatisfy(countPizza -> this.softly.assertThat(countPizza)
+                        .isEqualTo(3))
+                .anySatisfy(countBurger -> this.softly.assertThat(countBurger)
+                        .isEqualTo(2));
     }
 
 }

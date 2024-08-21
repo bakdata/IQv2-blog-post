@@ -5,20 +5,20 @@ import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyQueryMetadata;
-import org.apache.kafka.streams.query.QueryResult;
-import org.apache.kafka.streams.query.StateQueryRequest;
-import org.apache.kafka.streams.query.WindowKeyQuery;
-import org.apache.kafka.streams.query.WindowRangeQuery;
+import org.apache.kafka.streams.StreamsMetadata;
+import org.apache.kafka.streams.kstream.Windowed;
+import org.apache.kafka.streams.query.*;
+import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.WindowStoreIterator;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
+
 
 /**
  * Contains services for accessing the (versioned) state store
@@ -32,6 +32,18 @@ public final class WindowedKeyValueOrderService implements Service<String, Integ
         final String storeName = StoreType.WINDOWED_KEY_VALUE.getStoreName();
         log.info("Setting up order service for store '{}'", storeName);
         return new WindowedKeyValueOrderService(Storage.create(streams, storeName));
+    }
+
+    private static <K, V> List<V> extractStateQueryResults(final StateQueryResult<KeyValueIterator<Windowed<K>, V>> result) {
+        final Map<Integer, QueryResult<KeyValueIterator<Windowed<K>, V>>> allPartitionsResult =
+                result.getPartitionResults();
+        final List<V> aggregationResult = new ArrayList<>();
+        allPartitionsResult.forEach(
+                (key, queryResult) ->
+                        queryResult.getResult()
+                                .forEachRemaining(kv -> aggregationResult.add(kv.value))
+        );
+        return aggregationResult;
     }
 
     @Override
@@ -62,18 +74,69 @@ public final class WindowedKeyValueOrderService implements Service<String, Integ
         return results;
     }
 
-    // TODO: implement
     @Override
-    public List<Integer> getWindowedRange(@NonNull Instant from, @NonNull Instant to) {
-        WindowRangeQuery<String, Integer> rangeQuery = WindowRangeQuery.withWindowStartRange(from, to);
-        return List.of();
+    public List<Integer> getWindowedRange(@NonNull final Instant from, @NonNull final Instant to) {
+        final WindowRangeQuery<String, Integer> rangeQuery = WindowRangeQuery.withWindowStartRange(from, to);
+
+        final List<Integer> results = new ArrayList<>();
+
+        final Collection<StreamsMetadata> streamsMetadata =
+                this.storage.getStreams()
+                        .streamsMetadataForStore(this.storage.getStoreName());
+
+        for (final StreamsMetadata metadata : streamsMetadata) {
+            final Set<Integer> topicPartitions = metadata.topicPartitions()
+                    .stream()
+                    .map(TopicPartition::partition)
+                    .collect(Collectors.toSet());
+
+            final StateQueryRequest<KeyValueIterator<Windowed<String>, Integer>> queryRequest =
+                    this.storage.getInStore()
+                            .withQuery(rangeQuery)
+                            .withPartitions(topicPartitions)
+                            .enableExecutionInfo();
+
+            final StateQueryResult<KeyValueIterator<Windowed<String>, Integer>> stateQueryResult =
+                    this.storage.getStreams()
+                            .query(queryRequest);
+
+            results.addAll(extractStateQueryResults(stateQueryResult));
+        }
+
+        return results;
     }
 
-    // TODO: implement
+    // TODO: Not supported!
+    // https://github.com/apache/kafka/blob/0eaaff88cf68bc2c24d4874ff9bc1cc2b493c24b/streams/src/main/java/org/apache/kafka/streams/state/internals/MeteredWindowStore.java#L464C25-L464C91
     @Override
-    public List<Integer> getWindowedRangeForKey(final String key) {
-        WindowRangeQuery<String, Integer> rangeQuery = WindowRangeQuery.withKey(key);
-        return List.of();
+    public List<Integer> getWindowedRangeForKey(@NonNull final String menuItem) {
+        final WindowRangeQuery<String, Integer> rangeQuery = WindowRangeQuery.withKey(menuItem);
+        final List<Integer> results = new ArrayList<>();
+
+        final Collection<StreamsMetadata> streamsMetadata =
+                this.storage.getStreams()
+                        .streamsMetadataForStore(this.storage.getStoreName());
+
+        for (final StreamsMetadata metadata : streamsMetadata) {
+            final Set<Integer> topicPartitions = metadata.topicPartitions()
+                    .stream()
+                    .map(TopicPartition::partition)
+                    .collect(Collectors.toSet());
+
+            final StateQueryRequest<KeyValueIterator<Windowed<String>, Integer>> queryRequest =
+                    this.storage.getInStore()
+                            .withQuery(rangeQuery)
+                            .withPartitions(topicPartitions)
+                            .enableExecutionInfo();
+
+            final StateQueryResult<KeyValueIterator<Windowed<String>, Integer>> stateQueryResult =
+                    this.storage.getStreams()
+                            .query(queryRequest);
+
+            results.addAll(extractStateQueryResults(stateQueryResult));
+        }
+
+        return results;
     }
 
     @Override
