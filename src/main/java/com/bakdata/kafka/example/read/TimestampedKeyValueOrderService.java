@@ -31,6 +31,18 @@ public final class TimestampedKeyValueOrderService implements Service<String, Va
         return new TimestampedKeyValueOrderService(Storage.create(streams, storeName));
     }
 
+    private static <K, V> List<ValueAndTimestamp<V>> extractStateQueryResults(final StateQueryResult<KeyValueIterator<K, ValueAndTimestamp<V>>> result) {
+        final Map<Integer, QueryResult<KeyValueIterator<K, ValueAndTimestamp<V>>>> allPartitionsResult =
+                result.getPartitionResults();
+        final List<ValueAndTimestamp<V>> aggregationResult = new ArrayList<>();
+        allPartitionsResult.forEach(
+                (key, queryResult) ->
+                        queryResult.getResult()
+                                .forEachRemaining(kv -> aggregationResult.add(kv.value))
+        );
+        return aggregationResult;
+    }
+
     /**
      * KeyQuery and Range Query are similar to TimestampedKeyQuery and TimestampedRangeQuery
      * The difference is the TimestampedKeyQuery returns the ValueAndTimestamp<V> but KeyQuery returns only <V>
@@ -89,19 +101,6 @@ public final class TimestampedKeyValueOrderService implements Service<String, Va
         }
         return results;
     }
-
-    private static <K, V> List<ValueAndTimestamp<V>> extractStateQueryResults(final StateQueryResult<KeyValueIterator<K, ValueAndTimestamp<V>>> result) {
-        final Map<Integer, QueryResult<KeyValueIterator<K, ValueAndTimestamp<V>>>> allPartitionsResult =
-                result.getPartitionResults();
-        final List<ValueAndTimestamp<V>> aggregationResult = new ArrayList<>();
-        allPartitionsResult.forEach(
-                (key, queryResult) ->
-                        queryResult.getResult()
-                                .forEachRemaining(kv -> aggregationResult.add(kv.value))
-        );
-        return aggregationResult;
-    }
-
 
     @Override
     public void close() {

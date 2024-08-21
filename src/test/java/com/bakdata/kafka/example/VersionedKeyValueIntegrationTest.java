@@ -20,32 +20,6 @@ class VersionedKeyValueIntegrationTest extends AbstractIntegrationTest {
     private final Service<String, Integer> versionedKeyValueStoreApp =
             KeyValueStoreApplication.startApplication(StoreType.VERSIONED_KEY_VALUE);
 
-    @Override
-    protected Collection<KeyValue<String, String>> createRecords() {
-        return List.of(
-                new KeyValue<>(
-                        "Pizza",
-                        "{\"price\": 10, \"validFrom\": 1}"
-                ),
-                new KeyValue<>(
-                        "Pizza",
-                        "{\"price\": 12, \"validFrom\": 5}"
-                ),
-                new KeyValue<>(
-                        "Pizza",
-                        "{\"price\": 15, \"validFrom\": 10}"
-                ),
-                new KeyValue<>(
-                        "Burger",
-                        "{\"price\": 7, \"validFrom\": 3}"
-                ),
-                new KeyValue<>(
-                        "Burger",
-                        "{\"price\": 9, \"validFrom\": 7}"
-                )
-        );
-    }
-
     private static Stream<Arguments> getMenuItemAndPriceAndDateTime() {
         return Stream.of(
                 // Pizza
@@ -95,6 +69,32 @@ class VersionedKeyValueIntegrationTest extends AbstractIntegrationTest {
                         List.of(7, 9)
                 )
 
+        );
+    }
+
+    @Override
+    protected Collection<KeyValue<String, String>> createRecords() {
+        return List.of(
+                new KeyValue<>(
+                        "Pizza",
+                        "{\"price\": 10, \"validFrom\": 1}"
+                ),
+                new KeyValue<>(
+                        "Pizza",
+                        "{\"price\": 12, \"validFrom\": 5}"
+                ),
+                new KeyValue<>(
+                        "Pizza",
+                        "{\"price\": 15, \"validFrom\": 10}"
+                ),
+                new KeyValue<>(
+                        "Burger",
+                        "{\"price\": 7, \"validFrom\": 3}"
+                ),
+                new KeyValue<>(
+                        "Burger",
+                        "{\"price\": 9, \"validFrom\": 7}"
+                )
         );
     }
 

@@ -23,6 +23,16 @@ class WindowedKeyValueIntegrationTest extends AbstractIntegrationTest {
     private final Service<String, Integer> timestampedKeyValueStoreApp =
             KeyValueStoreApplication.startApplication(StoreType.WINDOWED_KEY_VALUE);
 
+    private static Stream<Arguments> getMenuItemAndPriceAndDateTime() {
+        return Stream.of(
+                // Pizza
+                Arguments.of(new Request("Pizza", Instant.ofEpochMilli(0), Instant.ofEpochMilli(3_600_000)), Collections.emptyList()),
+                Arguments.of(new Request("Pizza", Instant.ofEpochMilli(3_600_000), Instant.ofEpochMilli(7_200_000)), List.of(3)),
+                Arguments.of(new Request("Pizza", Instant.ofEpochMilli(7_200_000), Instant.ofEpochMilli(10_800_000)), List.of(2)),
+                Arguments.of(new Request("Pizza", Instant.ofEpochMilli(0), Instant.ofEpochMilli(7_200_001)), List.of(3, 2))
+        );
+    }
+
     @Override
     protected Collection<KeyValue<String, String>> createRecords() {
         return List.of(
@@ -71,16 +81,6 @@ class WindowedKeyValueIntegrationTest extends AbstractIntegrationTest {
         super.tearDown();
     }
 
-    private static Stream<Arguments> getMenuItemAndPriceAndDateTime() {
-        return Stream.of(
-                // Pizza
-                Arguments.of(new Request("Pizza", Instant.ofEpochMilli(0), Instant.ofEpochMilli(3_600_000)), Collections.emptyList()),
-                Arguments.of(new Request("Pizza", Instant.ofEpochMilli(3_600_000), Instant.ofEpochMilli(7_200_000)), List.of(3)),
-                Arguments.of(new Request("Pizza", Instant.ofEpochMilli(7_200_000), Instant.ofEpochMilli(10_800_000)), List.of(2)),
-                Arguments.of(new Request("Pizza", Instant.ofEpochMilli(0), Instant.ofEpochMilli(7_200_001)), List.of(3, 2))
-        );
-    }
-
     @ParameterizedTest
     @MethodSource("getMenuItemAndPriceAndDateTime")
     void shouldQueryCorrectWhenKeyQueryIsRequested(final Request request, final Collection<Integer> expected) throws InterruptedException {
@@ -91,9 +91,6 @@ class WindowedKeyValueIntegrationTest extends AbstractIntegrationTest {
         this.softly.assertThat(aggregatedOrder)
                 .hasSize(expected.size())
                 .isEqualTo(expected);
-    }
-
-    record Request(@NonNull String menuItem, @NonNull Instant from, @NonNull Instant to) {
     }
 
     @Test
@@ -121,6 +118,9 @@ class WindowedKeyValueIntegrationTest extends AbstractIntegrationTest {
                         .isEqualTo(3))
                 .anySatisfy(countBurger -> this.softly.assertThat(countBurger)
                         .isEqualTo(2));
+    }
+
+    record Request(@NonNull String menuItem, @NonNull Instant from, @NonNull Instant to) {
     }
 
 }

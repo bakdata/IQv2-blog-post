@@ -30,6 +30,18 @@ public final class KeyValueOrderService implements Service<String, String> {
         return new KeyValueOrderService(Storage.create(streams, storeName));
     }
 
+    private static <K, V> List<V> extractStateQueryResults(final StateQueryResult<KeyValueIterator<K, V>> result) {
+        final Map<Integer, QueryResult<KeyValueIterator<K, V>>> allPartitionsResult =
+                result.getPartitionResults();
+        final List<V> aggregationResult = new ArrayList<>();
+        allPartitionsResult.forEach(
+                (key, queryResult) ->
+                        queryResult.getResult()
+                                .forEachRemaining(kv -> aggregationResult.add(kv.value))
+        );
+        return aggregationResult;
+    }
+
     @Override
     public Optional<String> getValueForKey(@NonNull final String menuItem) {
         log.debug("Querying menuItem '{}'", menuItem);
@@ -83,19 +95,6 @@ public final class KeyValueOrderService implements Service<String, String> {
         }
         return results;
     }
-
-    private static <K, V> List<V> extractStateQueryResults(final StateQueryResult<KeyValueIterator<K, V>> result) {
-        final Map<Integer, QueryResult<KeyValueIterator<K, V>>> allPartitionsResult =
-                result.getPartitionResults();
-        final List<V> aggregationResult = new ArrayList<>();
-        allPartitionsResult.forEach(
-                (key, queryResult) ->
-                        queryResult.getResult()
-                                .forEachRemaining(kv -> aggregationResult.add(kv.value))
-        );
-        return aggregationResult;
-    }
-
 
     @Override
     public void close() {

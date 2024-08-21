@@ -28,6 +28,18 @@ public class VersionedKeyValueOrderService implements Service<String, Integer> {
         return new VersionedKeyValueOrderService(Storage.create(streams, storeName));
     }
 
+    private static <V> List<V> extractStateQueryResults(final StateQueryResult<VersionedRecordIterator<V>> result) {
+        final Map<Integer, QueryResult<VersionedRecordIterator<V>>> allPartitionsResult =
+                result.getPartitionResults();
+        final List<V> aggregationResult = new ArrayList<>();
+        allPartitionsResult.forEach(
+                (key, queryResult) ->
+                        queryResult.getResult()
+                                .forEachRemaining(kv -> aggregationResult.add(kv.value()))
+        );
+        return aggregationResult;
+    }
+
     @Override
     public Optional<Integer> getValueForKey(@NonNull final String key) {
         throw new UnsupportedOperationException("Not supported yet");
@@ -95,18 +107,6 @@ public class VersionedKeyValueOrderService implements Service<String, Integer> {
         }
 
         return results;
-    }
-
-    private static <V> List<V> extractStateQueryResults(final StateQueryResult<VersionedRecordIterator<V>> result) {
-        final Map<Integer, QueryResult<VersionedRecordIterator<V>>> allPartitionsResult =
-                result.getPartitionResults();
-        final List<V> aggregationResult = new ArrayList<>();
-        allPartitionsResult.forEach(
-                (key, queryResult) ->
-                        queryResult.getResult()
-                                .forEachRemaining(kv -> aggregationResult.add(kv.value()))
-        );
-        return aggregationResult;
     }
 
     @Override
