@@ -108,8 +108,10 @@ public final class WindowedKeyValueOrderService implements Service<String, Integ
 
     // TODO: Not supported!
     // https://github.com/apache/kafka/blob/0eaaff88cf68bc2c24d4874ff9bc1cc2b493c24b/streams/src/main/java/org/apache/kafka/streams/state/internals/MeteredWindowStore.java#L464C25-L464C91
+    // TODO: Only works with session store!
+    // https://github.com/apache/kafka/blob/61a661ec5e627217e8b4e4c009d65ee0e0e938ba/streams/src/main/java/org/apache/kafka/streams/state/internals/MeteredSessionStore.java#L502C25-L502C77
     @Override
-    public List<Integer> getWindowedRangeForKey(@NonNull final String menuItem) {
+    public List<Integer> getSessionRangeForKey(@NonNull final String menuItem) {
         final WindowRangeQuery<String, Integer> rangeQuery = WindowRangeQuery.withKey(menuItem);
         final List<Integer> results = new ArrayList<>();
 

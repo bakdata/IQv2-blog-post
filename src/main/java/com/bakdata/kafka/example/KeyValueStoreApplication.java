@@ -40,7 +40,7 @@ public final class KeyValueStoreApplication implements Runnable {
         // Define the processing topology of the Streams application.
         final StreamsBuilder builder = new StreamsBuilder();
 
-        writeFoodOrdersInStateStore(builder, storeType);
+        writeInStateStore(builder, storeType);
 
         final KafkaStreams streams = new KafkaStreams(builder.build(), streamsConfiguration);
 
@@ -54,7 +54,7 @@ public final class KeyValueStoreApplication implements Runnable {
         return storeType.createQueryService(streams);
     }
 
-    private static void writeFoodOrdersInStateStore(final StreamsBuilder builder, final StoreType storeType) {
+    private static void writeInStateStore(final StreamsBuilder builder, final StoreType storeType) {
         final KStream<String, String> inputStream = builder.stream(MENU_ITEM_DESCRIPTION_TOPIC);
 
         inputStream.processValues(storeType.createWriteProcessor(), Named.as("write-data"));

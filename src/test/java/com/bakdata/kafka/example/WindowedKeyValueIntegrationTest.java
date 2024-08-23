@@ -110,7 +110,7 @@ class WindowedKeyValueIntegrationTest extends AbstractIntegrationTest {
     @Disabled("Does not work. WindowStores only supports WindowRangeQuery.withWindowStartRange.")
     void shouldQueryCorrectWhenRangeQueryForKeyIsRequested() {
         final List<Integer> aggregatedOrder = this.timestampedKeyValueStoreApp
-                .getWindowedRangeForKey("Pizza");
+                .getSessionRangeForKey("Pizza");
 
         this.softly.assertThat(aggregatedOrder)
                 .hasSize(2)

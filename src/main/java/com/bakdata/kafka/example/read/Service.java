@@ -12,7 +12,6 @@ public interface Service<K, V> extends AutoCloseable {
 
     List<V> getValuesForRange(final K lower, final K upper);
 
-
     default Optional<V> getVersionedValueForKey(final @NonNull K key, final Instant asOfTime) {
         return Optional.empty();
     }
@@ -29,7 +28,7 @@ public interface Service<K, V> extends AutoCloseable {
         return Collections.emptyList();
     }
 
-    default List<V> getWindowedRangeForKey(final @NonNull K key) {
+    default List<V> getSessionRangeForKey(final @NonNull K key) {
         return Collections.emptyList();
     }
 
