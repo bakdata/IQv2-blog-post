@@ -1,20 +1,14 @@
 package com.bakdata.kafka.example;
 
 import com.bakdata.kafka.example.read.Service;
-import lombok.NonNull;
 import net.mguenther.kafka.junit.KeyValue;
 import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.provider.Arguments;
 
-import java.time.Instant;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Stream;
 
 import static java.lang.Thread.sleep;
 
@@ -79,18 +73,6 @@ class SessionKeyValueIntegrationTest extends AbstractIntegrationTest {
         this.sessionKeyValueStoreApp.close();
         super.tearDown();
     }
-
-//    @ParameterizedTest
-//    @MethodSource("getMenuItemAndPriceAndDateTime")
-//    void shouldQueryCorrectWhenKeyQueryIsRequested(final Request request, final Collection<Integer> expected) throws InterruptedException {
-//        Thread.sleep(8000);
-//        final List<Long> aggregatedOrder = this.windowedKeyValueStoreApp
-//                .getWindowedValueForKey(request.menuItem(), request.from(), request.to());
-//
-//        this.softly.assertThat(aggregatedOrder)
-//                .hasSize(expected.size())
-//                .isEqualTo(expected);
-//    }
 
     @Test
     void shouldQueryCorrectWhenRangeQueryForKeyIsRequested() throws InterruptedException {

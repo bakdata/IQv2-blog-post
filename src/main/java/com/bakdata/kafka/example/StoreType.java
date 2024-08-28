@@ -4,11 +4,10 @@ package com.bakdata.kafka.example;
 import com.bakdata.kafka.example.model.Order;
 import com.bakdata.kafka.example.read.*;
 import com.bakdata.kafka.example.utils.OrderTimeExtractor;
+import com.bakdata.kafka.example.utils.Utils;
 import com.bakdata.kafka.example.write.WriteKeyValueDataProcessorSupplier;
 import com.bakdata.kafka.example.write.WriteTimestampedKeyValueDataProcessorSupplier;
 import com.bakdata.kafka.example.write.WriteVersionedKeyValueDataProcessorSupplier;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -73,12 +72,10 @@ public enum StoreType {
         public void addTopology(final StreamsBuilder builder) {
             final KStream<String, String> inputStream =
                     builder.stream(MENU_ITEM_DESCRIPTION_TOPIC, Consumed.with(new OrderTimeExtractor()));
-            final ObjectMapper mapper = new ObjectMapper();
 
             final KGroupedStream<String, String> groupedFoodOrders =
                     inputStream
-//                            .peek((key, value) -> log.debug("Received record with key: {}, value: {}", key, value))
-                            .groupBy(((key, value) -> readToOrder(value, mapper).menuItem()));
+                            .groupBy(((key, value) -> Utils.readToObject(value, Order.class).menuItem()));
 
             final TimeWindows hourlyWindow = TimeWindows.ofSizeAndGrace(Duration.ofHours(1), Duration.ofMinutes(5));
             final KTable<Windowed<String>, Long> count = groupedFoodOrders.windowedBy(hourlyWindow)
@@ -88,13 +85,6 @@ public enum StoreType {
                     .peek(((key, value) -> log.debug("Count '{}', '{}' from '{}' to '{}'", value, key.key(), key.window().start(), key.window().end())));
         }
 
-        private static Order readToOrder(final String value, final ObjectMapper mapper) {
-            try {
-                return mapper.readValue(value, Order.class);
-            } catch (final JsonProcessingException e) {
-                throw new RuntimeException(e);
-            }
-        }
     }, SESSION_KEY_VALUE("session-kv-store") {
         @Override
         public <K, V> Service<K, V> createQueryService(final KafkaStreams streams) {
@@ -105,28 +95,16 @@ public enum StoreType {
         public void addTopology(final StreamsBuilder builder) {
             final KStream<String, String> inputStream =
                     builder.stream(MENU_ITEM_DESCRIPTION_TOPIC, Consumed.with(new OrderTimeExtractor()));
-            final ObjectMapper mapper = new ObjectMapper();
 
             final KGroupedStream<String, String> groupedFoodOrders =
-                    inputStream.mapValues(value -> readToMenuItem(value, mapper))
-                            .selectKey((key, value) -> value)
-//                            .repartition(Repartitioned.as("menu-item"))
-                            .groupByKey(Grouped.as("food-orders"));
+                    inputStream.groupBy(((key, value) -> Utils.readToObject(value, Order.class).menuItem()));
 
-            final SessionWindows sessionWindows = SessionWindows.ofInactivityGapWithNoGrace(Duration.ofHours(1));
+            final SessionWindows sessionWindows = SessionWindows.ofInactivityGapAndGrace(Duration.ofHours(1), Duration.ofMinutes(5));
             final KTable<Windowed<String>, Long> count = groupedFoodOrders.windowedBy(sessionWindows)
                     .count(Materialized.as(this.getStoreName()));
 
             count.toStream()
                     .peek(((key, value) -> log.debug("Count '{}', '{}' from '{}' to '{}''", value, key.key(), key.window().startTime(), key.window().endTime())));
-        }
-
-        private static String readToMenuItem(final String value, final ObjectMapper mapper) {
-            try {
-                return mapper.readValue(value, Order.class).menuItem();
-            } catch (final JsonProcessingException e) {
-                throw new RuntimeException(e);
-            }
         }
     };
     private final String storeName;
