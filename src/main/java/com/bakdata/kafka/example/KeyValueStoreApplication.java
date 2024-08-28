@@ -9,8 +9,6 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
-import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.Named;
 import picocli.CommandLine;
 
 import java.util.Properties;
@@ -40,7 +38,7 @@ public final class KeyValueStoreApplication implements Runnable {
         // Define the processing topology of the Streams application.
         final StreamsBuilder builder = new StreamsBuilder();
 
-        writeInStateStore(builder, storeType);
+        storeType.addTopology(builder);
 
         final KafkaStreams streams = new KafkaStreams(builder.build(), streamsConfiguration);
 
@@ -52,12 +50,6 @@ public final class KeyValueStoreApplication implements Runnable {
                 .addShutdownHook(new Thread(streams::close));
 
         return storeType.createQueryService(streams);
-    }
-
-    private static void writeInStateStore(final StreamsBuilder builder, final StoreType storeType) {
-        final KStream<String, String> inputStream = builder.stream(MENU_ITEM_DESCRIPTION_TOPIC);
-
-        inputStream.processValues(storeType.createWriteProcessor(), Named.as("write-data"));
     }
 
     private static Properties getStreamsConfiguration() {

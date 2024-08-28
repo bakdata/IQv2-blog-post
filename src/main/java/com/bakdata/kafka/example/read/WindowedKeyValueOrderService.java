@@ -13,6 +13,7 @@ import org.apache.kafka.streams.StreamsMetadata;
 import org.apache.kafka.streams.kstream.Windowed;
 import org.apache.kafka.streams.query.*;
 import org.apache.kafka.streams.state.KeyValueIterator;
+import org.apache.kafka.streams.state.ValueAndTimestamp;
 import org.apache.kafka.streams.state.WindowStoreIterator;
 
 import java.time.Instant;
@@ -25,7 +26,7 @@ import java.util.stream.Collectors;
  */
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
-public final class WindowedKeyValueOrderService implements Service<String, Integer> {
+public final class WindowedKeyValueOrderService implements Service<String, Long> {
     private final @NonNull Storage storage;
 
     public static WindowedKeyValueOrderService setUp(final KafkaStreams streams) {
@@ -47,38 +48,41 @@ public final class WindowedKeyValueOrderService implements Service<String, Integ
     }
 
     @Override
-    public List<Integer> getWindowedValueForKey(@NonNull final String menuItem, @NonNull final Instant from, @NonNull final Instant to) {
-        log.debug("Querying menu item '{}'", menuItem);
+    public List<Long> getWindowedValueForKey(final @NonNull String menuItem, final @NonNull Instant from, final @NonNull Instant to) {
+        log.debug("Querying order count of '{}' from '{}' to '{}'", menuItem, from, to);
 
-        final WindowKeyQuery<String, Integer> keyQuery =
-                WindowKeyQuery.withKeyAndWindowStartRange(menuItem, from, to.minusMillis(1));
+        final WindowKeyQuery<String, ValueAndTimestamp<Long>> keyQuery =
+                WindowKeyQuery.withKeyAndWindowStartRange(menuItem, from, to);
 
-        final KeyQueryMetadata keyQueryMetadata = this.storage.getStreams()
-                .queryMetadataForKey(this.storage.getStoreName(), menuItem, Serdes.String().serializer());
+        // TODO: probably not correct
+//        final KeyQueryMetadata keyQueryMetadata = this.storage.getStreams()
+//                .queryMetadataForKey(this.storage.getStoreName(), menuItem, Serdes.String().serializer());
 
-        final StateQueryRequest<WindowStoreIterator<Integer>> queryRequest =
+        final StateQueryRequest<WindowStoreIterator<ValueAndTimestamp<Long>>> queryRequest =
                 this.storage.getInStore()
                         .withQuery(keyQuery)
-                        .withPartitions(Collections.singleton(keyQueryMetadata.partition()))
+//                        .withPartitions(Collections.singleton(keyQueryMetadata.partition()))
                         .enableExecutionInfo();
 
-        final QueryResult<WindowStoreIterator<Integer>> onlyPartitionResult = this.storage.getStreams()
+        final QueryResult<WindowStoreIterator<ValueAndTimestamp<Long>>> onlyPartitionResult = this.storage.getStreams()
                 .query(queryRequest)
                 .getOnlyPartitionResult();
 
-        final List<Integer> results = new ArrayList<>();
+        final List<Long> results = new ArrayList<>();
         if (onlyPartitionResult != null && onlyPartitionResult.isSuccess()) {
             onlyPartitionResult.getResult()
-                    .forEachRemaining(result -> results.add(result.value));
+                    .forEachRemaining(result -> results.add(result.value.value()));
         }
         return results;
     }
 
     @Override
-    public List<Integer> getWindowedRange(@NonNull final Instant from, @NonNull final Instant to) {
-        final WindowRangeQuery<String, Integer> rangeQuery = WindowRangeQuery.withWindowStartRange(from, to);
+    public List<Long> getWindowedRange(final @NonNull Instant from, final @NonNull Instant to) {
+        log.debug("Querying range from '{}' to '{}'", from, to);
 
-        final List<Integer> results = new ArrayList<>();
+        final WindowRangeQuery<String, Long> rangeQuery = WindowRangeQuery.withWindowStartRange(from, to);
+
+        final List<Long> results = new ArrayList<>();
 
         final Collection<StreamsMetadata> streamsMetadata =
                 this.storage.getStreams()
@@ -90,13 +94,13 @@ public final class WindowedKeyValueOrderService implements Service<String, Integ
                     .map(TopicPartition::partition)
                     .collect(Collectors.toSet());
 
-            final StateQueryRequest<KeyValueIterator<Windowed<String>, Integer>> queryRequest =
+            final StateQueryRequest<KeyValueIterator<Windowed<String>, Long>> queryRequest =
                     this.storage.getInStore()
                             .withQuery(rangeQuery)
                             .withPartitions(topicPartitions)
                             .enableExecutionInfo();
 
-            final StateQueryResult<KeyValueIterator<Windowed<String>, Integer>> stateQueryResult =
+            final StateQueryResult<KeyValueIterator<Windowed<String>, Long>> stateQueryResult =
                     this.storage.getStreams()
                             .query(queryRequest);
 
@@ -110,44 +114,44 @@ public final class WindowedKeyValueOrderService implements Service<String, Integ
     // https://github.com/apache/kafka/blob/0eaaff88cf68bc2c24d4874ff9bc1cc2b493c24b/streams/src/main/java/org/apache/kafka/streams/state/internals/MeteredWindowStore.java#L464C25-L464C91
     // TODO: Only works with session store!
     // https://github.com/apache/kafka/blob/61a661ec5e627217e8b4e4c009d65ee0e0e938ba/streams/src/main/java/org/apache/kafka/streams/state/internals/MeteredSessionStore.java#L502C25-L502C77
+//    @Override
+//    public List<Long> getSessionRangeForKey(@NonNull final String menuItem) {
+//        final WindowRangeQuery<String, Integer> rangeQuery = WindowRangeQuery.withKey(menuItem);
+//        final List<Integer> results = new ArrayList<>();
+//
+//        final Collection<StreamsMetadata> streamsMetadata =
+//                this.storage.getStreams()
+//                        .streamsMetadataForStore(this.storage.getStoreName());
+//
+//        for (final StreamsMetadata metadata : streamsMetadata) {
+//            final Set<Integer> topicPartitions = metadata.topicPartitions()
+//                    .stream()
+//                    .map(TopicPartition::partition)
+//                    .collect(Collectors.toSet());
+//
+//            final StateQueryRequest<KeyValueIterator<Windowed<String>, Integer>> queryRequest =
+//                    this.storage.getInStore()
+//                            .withQuery(rangeQuery)
+//                            .withPartitions(topicPartitions)
+//                            .enableExecutionInfo();
+//
+//            final StateQueryResult<KeyValueIterator<Windowed<String>, Integer>> stateQueryResult =
+//                    this.storage.getStreams()
+//                            .query(queryRequest);
+//
+//            results.addAll(extractStateQueryResults(stateQueryResult));
+//        }
+//
+//        return results;
+//    }
+
     @Override
-    public List<Integer> getSessionRangeForKey(@NonNull final String menuItem) {
-        final WindowRangeQuery<String, Integer> rangeQuery = WindowRangeQuery.withKey(menuItem);
-        final List<Integer> results = new ArrayList<>();
-
-        final Collection<StreamsMetadata> streamsMetadata =
-                this.storage.getStreams()
-                        .streamsMetadataForStore(this.storage.getStoreName());
-
-        for (final StreamsMetadata metadata : streamsMetadata) {
-            final Set<Integer> topicPartitions = metadata.topicPartitions()
-                    .stream()
-                    .map(TopicPartition::partition)
-                    .collect(Collectors.toSet());
-
-            final StateQueryRequest<KeyValueIterator<Windowed<String>, Integer>> queryRequest =
-                    this.storage.getInStore()
-                            .withQuery(rangeQuery)
-                            .withPartitions(topicPartitions)
-                            .enableExecutionInfo();
-
-            final StateQueryResult<KeyValueIterator<Windowed<String>, Integer>> stateQueryResult =
-                    this.storage.getStreams()
-                            .query(queryRequest);
-
-            results.addAll(extractStateQueryResults(stateQueryResult));
-        }
-
-        return results;
-    }
-
-    @Override
-    public Optional<Integer> getValueForKey(@NonNull final String menuItem) {
+    public Optional<Long> getValueForKey(final @NonNull String menuItem) {
         throw new IllegalCallerException("Window Store can not be called for key query.");
     }
 
     @Override
-    public List<Integer> getValuesForRange(final String lower, final String upper) {
+    public List<Long> getValuesForRange(final String lower, final String upper) {
         throw new IllegalCallerException("Window Store can not be called for range query.");
     }
 
