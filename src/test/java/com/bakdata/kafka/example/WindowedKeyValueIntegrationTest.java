@@ -38,43 +38,43 @@ class WindowedKeyValueIntegrationTest extends AbstractIntegrationTest {
         return List.of(
                 // 3 Pizza in first window
                 new KeyValue<>(
-                        "Pizza",
-                        "{\"menuItem\": \"Pizza\", \"timestamp\": 3600000}"
-                ),
-                new KeyValue<>(
-                        "Pizza",
+                        "order-1",
                         "{\"menuItem\": \"Pizza\", \"timestamp\": 3600001}"
                 ),
                 new KeyValue<>(
-                        "Pizza",
+                        "order-2",
+                        "{\"menuItem\": \"Pizza\", \"timestamp\": 3600002}"
+                ),
+                new KeyValue<>(
+                        "order-3",
                         "{\"menuItem\": \"Pizza\", \"timestamp\": 3600003}"
                 ),
 
                 // 4 Burgers in first window
                 new KeyValue<>(
-                        "Burger",
+                        "order-4",
                         "{\"menuItem\": \"Burger\", \"timestamp\": 3600005}"
                 ),
                 new KeyValue<>(
-                        "Burger",
+                        "order-5",
                         "{\"menuItem\": \"Burger\", \"timestamp\": 3600006}"
                 ),
                 new KeyValue<>(
-                        "Burger",
+                        "order-6",
                         "{\"menuItem\": \"Burger\", \"timestamp\": 3600007}"
                 ),
                 new KeyValue<>(
-                        "Burger",
+                        "order-7",
                         "{\"menuItem\": \"Burger\", \"timestamp\": 3600008}"
                 ),
 
-                // 2 Pizza in second window
+                // 5 Pizza in second window
                 new KeyValue<>(
-                        "Pizza",
+                        "order-8",
                         "{\"menuItem\": \"Pizza\", \"timestamp\": 7200002}"
                 ),
                 new KeyValue<>(
-                        "Pizza",
+                        "order-9",
                         "{\"menuItem\": \"Pizza\", \"timestamp\": 7200003}"
                 )
         );
@@ -88,9 +88,8 @@ class WindowedKeyValueIntegrationTest extends AbstractIntegrationTest {
 
     @ParameterizedTest
     @MethodSource("getMenuItemAndPriceAndDateTime")
-    @Disabled("Does not work. WindowStores only supports WindowRangeQuery.withWindowStartRange.")
     void shouldQueryCorrectWhenKeyQueryIsRequested(final Request request, final Collection<Integer> expected) throws InterruptedException {
-        Thread.sleep(8000);
+        Thread.sleep(10000);
         final List<Long> aggregatedOrder = this.windowedKeyValueStoreApp
                 .getWindowedValueForKey(request.menuItem(), request.from(), request.to());
 
@@ -102,7 +101,7 @@ class WindowedKeyValueIntegrationTest extends AbstractIntegrationTest {
     @Test
     @Disabled("Does not work. WindowStores only supports WindowRangeQuery.withWindowStartRange.")
     void shouldQueryCorrectWhenRangeQueryIsRequested() throws InterruptedException {
-        Thread.sleep(8000);
+        Thread.sleep(10000);
         final List<Long> aggregatedOrder = this.windowedKeyValueStoreApp
                 .getWindowedRange(Instant.ofEpochMilli(3_600_000), Instant.ofEpochMilli(3_600_010));
 

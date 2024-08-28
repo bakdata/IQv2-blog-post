@@ -6,15 +6,13 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
-import org.apache.kafka.streams.KeyQueryMetadata;
+import org.apache.kafka.streams.KeyValue;
+import org.apache.kafka.streams.StoreQueryParameters;
 import org.apache.kafka.streams.StreamsMetadata;
 import org.apache.kafka.streams.kstream.Windowed;
 import org.apache.kafka.streams.query.*;
-import org.apache.kafka.streams.state.KeyValueIterator;
-import org.apache.kafka.streams.state.ValueAndTimestamp;
-import org.apache.kafka.streams.state.WindowStoreIterator;
+import org.apache.kafka.streams.state.*;
 
 import java.time.Instant;
 import java.util.*;
@@ -49,10 +47,10 @@ public final class WindowedKeyValueOrderService implements Service<String, Long>
 
     @Override
     public List<Long> getWindowedValueForKey(final @NonNull String menuItem, final @NonNull Instant from, final @NonNull Instant to) {
-        log.debug("Querying order count of '{}' from '{}' to '{}'", menuItem, from, to);
+        log.debug("Querying order count of '{}' from '{}' to '{}'", menuItem, from.toEpochMilli(), to.toEpochMilli());
 
         final WindowKeyQuery<String, ValueAndTimestamp<Long>> keyQuery =
-                WindowKeyQuery.withKeyAndWindowStartRange(menuItem, from, to);
+                WindowKeyQuery.withKeyAndWindowStartRange(menuItem, from, to.minusMillis(1));
 
         // TODO: probably not correct
 //        final KeyQueryMetadata keyQueryMetadata = this.storage.getStreams()
@@ -109,41 +107,6 @@ public final class WindowedKeyValueOrderService implements Service<String, Long>
 
         return results;
     }
-
-    // TODO: Not supported!
-    // https://github.com/apache/kafka/blob/0eaaff88cf68bc2c24d4874ff9bc1cc2b493c24b/streams/src/main/java/org/apache/kafka/streams/state/internals/MeteredWindowStore.java#L464C25-L464C91
-    // TODO: Only works with session store!
-    // https://github.com/apache/kafka/blob/61a661ec5e627217e8b4e4c009d65ee0e0e938ba/streams/src/main/java/org/apache/kafka/streams/state/internals/MeteredSessionStore.java#L502C25-L502C77
-//    @Override
-//    public List<Long> getSessionRangeForKey(@NonNull final String menuItem) {
-//        final WindowRangeQuery<String, Integer> rangeQuery = WindowRangeQuery.withKey(menuItem);
-//        final List<Integer> results = new ArrayList<>();
-//
-//        final Collection<StreamsMetadata> streamsMetadata =
-//                this.storage.getStreams()
-//                        .streamsMetadataForStore(this.storage.getStoreName());
-//
-//        for (final StreamsMetadata metadata : streamsMetadata) {
-//            final Set<Integer> topicPartitions = metadata.topicPartitions()
-//                    .stream()
-//                    .map(TopicPartition::partition)
-//                    .collect(Collectors.toSet());
-//
-//            final StateQueryRequest<KeyValueIterator<Windowed<String>, Integer>> queryRequest =
-//                    this.storage.getInStore()
-//                            .withQuery(rangeQuery)
-//                            .withPartitions(topicPartitions)
-//                            .enableExecutionInfo();
-//
-//            final StateQueryResult<KeyValueIterator<Windowed<String>, Integer>> stateQueryResult =
-//                    this.storage.getStreams()
-//                            .query(queryRequest);
-//
-//            results.addAll(extractStateQueryResults(stateQueryResult));
-//        }
-//
-//        return results;
-//    }
 
     @Override
     public Optional<Long> getValueForKey(final @NonNull String menuItem) {

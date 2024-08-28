@@ -59,7 +59,6 @@ public enum StoreType {
         @Override
         public void addTopology(final StreamsBuilder builder) {
             final KStream<String, String> inputStream = builder.stream(MENU_ITEM_DESCRIPTION_TOPIC);
-
             inputStream.processValues(new WriteVersionedKeyValueDataProcessorSupplier());
         }
 
@@ -75,15 +74,47 @@ public enum StoreType {
             final KStream<String, String> inputStream =
                     builder.stream(MENU_ITEM_DESCRIPTION_TOPIC, Consumed.with(new OrderTimeExtractor()));
             final ObjectMapper mapper = new ObjectMapper();
-            final TimeWindows windows = TimeWindows.ofSizeWithNoGrace(Duration.ofHours(1));
+
+            final KGroupedStream<String, String> groupedFoodOrders =
+                    inputStream
+                            .peek((key, value) -> log.debug("Received record with key: {}, value: {}", key, value))
+                            .groupBy(((key, value) -> readToOrder(value, mapper).menuItem()));
+
+            final TimeWindows hourlyWindow = TimeWindows.ofSizeAndGrace(Duration.ofHours(1), Duration.ofMinutes(5));
+            final KTable<Windowed<String>, Long> count = groupedFoodOrders.windowedBy(hourlyWindow)
+                    .count(Materialized.as(this.getStoreName()));
+
+            count.toStream()
+                    .peek(((key, value) -> log.debug("Count '{}', '{}' from '{}' to '{}'", value, key.key(), key.window().start(), key.window().end())));
+        }
+
+        private static Order readToOrder(final String value, final ObjectMapper mapper) {
+            try {
+                return mapper.readValue(value, Order.class);
+            } catch (final JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }, SESSION_KEY_VALUE("session-kv-store") {
+        @Override
+        public <K, V> Service<K, V> createQueryService(final KafkaStreams streams) {
+            return (Service<K, V>) SessionedKeyValueOrderService.setUp(streams);
+        }
+
+        @Override
+        public void addTopology(final StreamsBuilder builder) {
+            final KStream<String, String> inputStream =
+                    builder.stream(MENU_ITEM_DESCRIPTION_TOPIC, Consumed.with(new OrderTimeExtractor()));
+            final ObjectMapper mapper = new ObjectMapper();
 
             final KGroupedStream<String, String> groupedFoodOrders =
                     inputStream.mapValues(value -> readToMenuItem(value, mapper))
                             .selectKey((key, value) -> value)
-                            .repartition(Repartitioned.as("menu-item"))
-                            .groupByKey(Grouped.as("Food orders"));
+//                            .repartition(Repartitioned.as("menu-item"))
+                            .groupByKey(Grouped.as("food-orders"));
 
-            final KTable<Windowed<String>, Long> count = groupedFoodOrders.windowedBy(windows)
+            final SessionWindows sessionWindows = SessionWindows.ofInactivityGapWithNoGrace(Duration.ofHours(1));
+            final KTable<Windowed<String>, Long> count = groupedFoodOrders.windowedBy(sessionWindows)
                     .count(Materialized.as(this.getStoreName()));
 
             count.toStream()
