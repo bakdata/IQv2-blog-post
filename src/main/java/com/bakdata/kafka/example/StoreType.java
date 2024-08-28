@@ -77,7 +77,7 @@ public enum StoreType {
 
             final KGroupedStream<String, String> groupedFoodOrders =
                     inputStream
-                            .peek((key, value) -> log.debug("Received record with key: {}, value: {}", key, value))
+//                            .peek((key, value) -> log.debug("Received record with key: {}, value: {}", key, value))
                             .groupBy(((key, value) -> readToOrder(value, mapper).menuItem()));
 
             final TimeWindows hourlyWindow = TimeWindows.ofSizeAndGrace(Duration.ofHours(1), Duration.ofMinutes(5));

@@ -99,7 +99,6 @@ class WindowedKeyValueIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("Does not work. WindowStores only supports WindowRangeQuery.withWindowStartRange.")
     void shouldQueryCorrectWhenRangeQueryIsRequested() throws InterruptedException {
         Thread.sleep(10000);
         final List<Long> aggregatedOrder = this.windowedKeyValueStoreApp

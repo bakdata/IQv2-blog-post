@@ -6,9 +6,8 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.streams.KafkaStreams;
-import org.apache.kafka.streams.KeyValue;
-import org.apache.kafka.streams.StoreQueryParameters;
+import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.streams.*;
 import org.apache.kafka.streams.StreamsMetadata;
 import org.apache.kafka.streams.kstream.Windowed;
 import org.apache.kafka.streams.query.*;
@@ -33,14 +32,14 @@ public final class WindowedKeyValueOrderService implements Service<String, Long>
         return new WindowedKeyValueOrderService(Storage.create(streams, storeName));
     }
 
-    private static <K, V> List<V> extractStateQueryResults(final StateQueryResult<KeyValueIterator<Windowed<K>, V>> result) {
-        final Map<Integer, QueryResult<KeyValueIterator<Windowed<K>, V>>> allPartitionsResult =
+    private static <K, V> List<V> extractStateQueryResults(final StateQueryResult<KeyValueIterator<Windowed<K>, ValueAndTimestamp<V>>> result) {
+        final Map<Integer, QueryResult<KeyValueIterator<Windowed<K>, ValueAndTimestamp<V>>>> allPartitionsResult =
                 result.getPartitionResults();
         final List<V> aggregationResult = new ArrayList<>();
         allPartitionsResult.forEach(
                 (key, queryResult) ->
                         queryResult.getResult()
-                                .forEachRemaining(kv -> aggregationResult.add(kv.value))
+                                .forEachRemaining(kv -> aggregationResult.add(kv.value.value()))
         );
         return aggregationResult;
     }
@@ -52,14 +51,13 @@ public final class WindowedKeyValueOrderService implements Service<String, Long>
         final WindowKeyQuery<String, ValueAndTimestamp<Long>> keyQuery =
                 WindowKeyQuery.withKeyAndWindowStartRange(menuItem, from, to.minusMillis(1));
 
-        // TODO: probably not correct
-//        final KeyQueryMetadata keyQueryMetadata = this.storage.getStreams()
-//                .queryMetadataForKey(this.storage.getStoreName(), menuItem, Serdes.String().serializer());
+        final KeyQueryMetadata keyQueryMetadata = this.storage.getStreams()
+                .queryMetadataForKey(this.storage.getStoreName(), menuItem, Serdes.String().serializer());
 
         final StateQueryRequest<WindowStoreIterator<ValueAndTimestamp<Long>>> queryRequest =
                 this.storage.getInStore()
                         .withQuery(keyQuery)
-//                        .withPartitions(Collections.singleton(keyQueryMetadata.partition()))
+                        .withPartitions(Collections.singleton(keyQueryMetadata.partition()))
                         .enableExecutionInfo();
 
         final QueryResult<WindowStoreIterator<ValueAndTimestamp<Long>>> onlyPartitionResult = this.storage.getStreams()
@@ -78,7 +76,7 @@ public final class WindowedKeyValueOrderService implements Service<String, Long>
     public List<Long> getWindowedRange(final @NonNull Instant from, final @NonNull Instant to) {
         log.debug("Querying range from '{}' to '{}'", from, to);
 
-        final WindowRangeQuery<String, Long> rangeQuery = WindowRangeQuery.withWindowStartRange(from, to);
+        final WindowRangeQuery<String, ValueAndTimestamp<Long>> rangeQuery = WindowRangeQuery.withWindowStartRange(from, to);
 
         final List<Long> results = new ArrayList<>();
 
@@ -92,13 +90,13 @@ public final class WindowedKeyValueOrderService implements Service<String, Long>
                     .map(TopicPartition::partition)
                     .collect(Collectors.toSet());
 
-            final StateQueryRequest<KeyValueIterator<Windowed<String>, Long>> queryRequest =
+            final StateQueryRequest<KeyValueIterator<Windowed<String>, ValueAndTimestamp<Long>>> queryRequest =
                     this.storage.getInStore()
                             .withQuery(rangeQuery)
                             .withPartitions(topicPartitions)
                             .enableExecutionInfo();
 
-            final StateQueryResult<KeyValueIterator<Windowed<String>, Long>> stateQueryResult =
+            final StateQueryResult<KeyValueIterator<Windowed<String>, ValueAndTimestamp<Long>>> stateQueryResult =
                     this.storage.getStreams()
                             .query(queryRequest);
 

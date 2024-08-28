@@ -19,7 +19,7 @@ import static net.mguenther.kafka.junit.EmbeddedKafkaCluster.provisionWith;
 abstract class AbstractIntegrationTest {
     private static final int SLEEP_TIME_TO_INGEST = 3000;
 
-    private static final int NUMBER_OF_PARTITIONS = 1;
+    private static final int NUMBER_OF_PARTITIONS = 3;
 
     private final EmbeddedKafkaCluster kafkaCluster =
             provisionWith(EmbeddedKafkaClusterConfig.defaultClusterConfig());
