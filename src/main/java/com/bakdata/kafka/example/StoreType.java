@@ -97,14 +97,22 @@ public enum StoreType {
                     builder.stream(MENU_ITEM_DESCRIPTION_TOPIC, Consumed.with(new OrderTimeExtractor()));
 
             final KGroupedStream<String, String> groupedFoodOrders =
-                    inputStream.groupBy(((key, value) -> Utils.readToObject(value, Order.class).menuItem()));
+                    inputStream.groupBy(((key, value) -> Utils.readToObject(value, Order.class).customerId()));
 
-            final SessionWindows sessionWindows = SessionWindows.ofInactivityGapAndGrace(Duration.ofHours(1), Duration.ofMinutes(5));
-            final KTable<Windowed<String>, Long> count = groupedFoodOrders.windowedBy(sessionWindows)
+//            final SessionWindows sessionWindows = SessionWindows.ofInactivityGapWithNoGrace(Duration.ofMinutes(30));
+            final SessionWindows sessionWindows = SessionWindows.with(Duration.ofMinutes(30));
+            final KTable<Windowed<String>, Long> sessionCounts = groupedFoodOrders.windowedBy(sessionWindows)
                     .count(Materialized.as(this.getStoreName()));
 
-            count.toStream()
-                    .peek(((key, value) -> log.debug("Count '{}', '{}' from '{}' to '{}''", value, key.key(), key.window().startTime(), key.window().endTime())));
+            sessionCounts.toStream()
+                    .peek((windowedKey, count) -> {
+                        final String customerId = windowedKey.key();
+                        final long start = windowedKey.window().start();
+                        final long end = windowedKey.window().end();
+                        log.debug("Dining session for customer '{}': count = {}, from {} to {}", customerId, count, start, end);
+
+                        // Here, you can add logic to calculate the session duration or other statistics
+                    });
         }
     };
     private final String storeName;

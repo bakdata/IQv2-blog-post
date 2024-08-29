@@ -1,12 +1,14 @@
 package com.bakdata.kafka.example.read;
 
 import com.bakdata.kafka.example.StoreType;
+import com.bakdata.kafka.example.model.CustomerSession;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsMetadata;
+import org.apache.kafka.streams.kstream.Window;
 import org.apache.kafka.streams.kstream.Windowed;
 import org.apache.kafka.streams.query.QueryResult;
 import org.apache.kafka.streams.query.StateQueryRequest;
@@ -19,8 +21,9 @@ import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Slf4j
-public class SessionedKeyValueOrderService implements Service<String, Long> {
+public class SessionedKeyValueOrderService implements Service<String, CustomerSession> {
     private final @NonNull Storage storage;
+
 
     public static SessionedKeyValueOrderService setUp(final KafkaStreams streams) {
         final String storeName = StoreType.SESSION_KEY_VALUE.getStoreName();
@@ -29,22 +32,25 @@ public class SessionedKeyValueOrderService implements Service<String, Long> {
     }
 
 
-    private static <K, V> List<V> extractStateQueryResults(final StateQueryResult<KeyValueIterator<Windowed<K>, V>> result) {
-        final Map<Integer, QueryResult<KeyValueIterator<Windowed<K>, V>>> allPartitionsResult =
+    private static <K> List<CustomerSession> extractStateQueryResults(final StateQueryResult<KeyValueIterator<Windowed<K>, Long>> result) {
+        final Map<Integer, QueryResult<KeyValueIterator<Windowed<K>, Long>>> allPartitionsResult =
                 result.getPartitionResults();
-        final List<V> aggregationResult = new ArrayList<>();
+        final List<CustomerSession> aggregationResult = new ArrayList<>();
         allPartitionsResult.forEach(
                 (key, queryResult) ->
                         queryResult.getResult()
-                                .forEachRemaining(kv -> aggregationResult.add(kv.value))
+                                .forEachRemaining(kv -> {
+                                    final Window window = kv.key.window();
+                                    aggregationResult.add(new CustomerSession(window.startTime(), window.endTime(), kv.value));
+                                })
         );
         return aggregationResult;
     }
 
     @Override
-    public List<Long> getSessionRangeForKey(final @NonNull String menuItem) {
-        final WindowRangeQuery<String, Long> rangeQuery = WindowRangeQuery.withKey(menuItem);
-        final List<Long> results = new ArrayList<>();
+    public List<CustomerSession> getSessionRangeForKey(final @NonNull String customerId) {
+        final WindowRangeQuery<String, Long> rangeQuery = WindowRangeQuery.withKey(customerId);
+        final List<CustomerSession> results = new ArrayList<>();
 
         final Collection<StreamsMetadata> streamsMetadata =
                 this.storage.getStreams()
@@ -81,12 +87,12 @@ public class SessionedKeyValueOrderService implements Service<String, Long> {
     }
 
     @Override
-    public Optional<Long> getValueForKey(@NonNull final String key) {
+    public Optional<CustomerSession> getValueForKey(final @NonNull String key) {
         return Optional.empty();
     }
 
     @Override
-    public List<Long> getValuesForRange(final String lower, final String upper) {
+    public List<CustomerSession> getValuesForRange(final String lower, final String upper) {
         return List.of();
     }
 

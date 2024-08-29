@@ -61,12 +61,12 @@ public final class KeyValueStoreApplication implements Runnable {
         streamsConfiguration.setProperty(StreamsConfig.APPLICATION_ID_CONFIG, "food-order");
         streamsConfiguration.setProperty(StreamsConfig.CLIENT_ID_CONFIG, "food-order-client");
         streamsConfiguration.setProperty(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVER);
+        streamsConfiguration.setProperty(StreamsConfig.producerPrefix(ProducerConfig.COMPRESSION_TYPE_CONFIG), "gzip");
 
-        // TODO: Change this:
         streamsConfiguration.setProperty(StreamsConfig.APPLICATION_SERVER_CONFIG, "localhost:8080");
 
         configureDefaultSerde(streamsConfiguration);
-        streamsConfiguration.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 10 * 1000);
+        streamsConfiguration.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 100);
         streamsConfiguration.put(StreamsConfig.STATESTORE_CACHE_MAX_BYTES_CONFIG, 0);
         streamsConfiguration.setProperty(StreamsConfig.STATE_DIR_CONFIG, TestUtils.tempDirectory().getAbsolutePath());
         return streamsConfiguration;
