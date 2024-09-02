@@ -99,6 +99,7 @@ public enum StoreType {
             final KGroupedStream<String, String> groupedFoodOrders =
                     inputStream.groupBy(((key, value) -> Utils.readToObject(value, Order.class).customerId()));
 
+            // TODO: new DSL is not working...
 //            final SessionWindows sessionWindows = SessionWindows.ofInactivityGapWithNoGrace(Duration.ofMinutes(30));
             final SessionWindows sessionWindows = SessionWindows.with(Duration.ofMinutes(30));
             final KTable<Windowed<String>, Long> sessionCounts = groupedFoodOrders.windowedBy(sessionWindows)
