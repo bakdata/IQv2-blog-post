@@ -12,6 +12,7 @@ import static java.time.ZoneOffset.UTC;
 @UtilityClass
 public class Utils {
     private static final ObjectMapper MAPPER = new ObjectMapper();
+
     public LocalDateTime toLocalDateTime(final Long timestamp) {
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), UTC);
     }
