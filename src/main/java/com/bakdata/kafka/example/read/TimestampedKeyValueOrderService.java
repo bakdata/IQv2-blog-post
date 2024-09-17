@@ -49,13 +49,13 @@ public final class TimestampedKeyValueOrderService implements Service<String, Va
      */
 
     @Override
-    public Optional<ValueAndTimestamp<String>> getValueForKey(@NonNull final String key) {
-        log.debug("Querying key '{}'", key);
+    public Optional<ValueAndTimestamp<String>> getValueForKey(@NonNull final String promotionCode) {
+        log.debug("Querying key '{}'", promotionCode);
 
-        final TimestampedKeyQuery<String, String> keyQuery = TimestampedKeyQuery.withKey(key);
+        final TimestampedKeyQuery<String, String> keyQuery = TimestampedKeyQuery.withKey(promotionCode);
 
         final KeyQueryMetadata keyQueryMetadata = this.storage.getStreams()
-                .queryMetadataForKey(this.storage.getStoreName(), key, Serdes.String().serializer());
+                .queryMetadataForKey(this.storage.getStoreName(), promotionCode, Serdes.String().serializer());
 
         final StateQueryRequest<ValueAndTimestamp<String>> queryRequest =
                 this.storage.getInStore()

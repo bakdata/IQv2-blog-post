@@ -67,7 +67,7 @@ class WindowedKeyValueIntegrationTest extends AbstractIntegrationTest {
                         "{\"menuItem\": \"Burger\", \"timestamp\": 3600008}"
                 ),
 
-                // 5 Pizza in second window
+                // 2 Pizza in second window
                 new KeyValue<>(
                         "order-8",
                         "{\"menuItem\": \"Pizza\", \"timestamp\": 7200002}"
@@ -110,20 +110,6 @@ class WindowedKeyValueIntegrationTest extends AbstractIntegrationTest {
                 .anySatisfy(countBurger -> this.softly.assertThat(countBurger)
                         .isEqualTo(4));
     }
-
-//    @Test
-//    @Disabled("Does not work. WindowStores only supports WindowRangeQuery.withWindowStartRange.")
-//    void shouldQueryCorrectWhenRangeQueryForKeyIsRequested() {
-//        final List<Long> aggregatedOrder = this.windowedKeyValueStoreApp
-//                .getSessionRangeForKey("Pizza");
-//
-//        this.softly.assertThat(aggregatedOrder)
-//                .hasSize(2)
-//                .anySatisfy(countPizza -> this.softly.assertThat(countPizza)
-//                        .isEqualTo(3))
-//                .anySatisfy(countBurger -> this.softly.assertThat(countBurger)
-//                        .isEqualTo(2));
-//    }
 
     record Request(@NonNull String menuItem, @NonNull Instant from, @NonNull Instant to) {
     }

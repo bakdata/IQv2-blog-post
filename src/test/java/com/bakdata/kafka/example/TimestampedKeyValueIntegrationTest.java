@@ -46,25 +46,25 @@ class TimestampedKeyValueIntegrationTest extends AbstractIntegrationTest {
     @Test
     void shouldQueryCorrectWhenKeyQueryIsRequested() {
         final Optional<ValueAndTimestamp<String>> aggregatedOrder = this.timestampedKeyValueStoreApp
-                .getValueForKey("Pizza");
+                .getValueForKey("SUMMER2024");
 
         this.softly.assertThat(aggregatedOrder)
-                .hasValue(ValueAndTimestamp.make("SUMMER2024", 10));
+                .hasValue(ValueAndTimestamp.make("Pizza", 10));
     }
 
     @Test
     void shouldQueryCorrectWhenRangeQueryIsRequested() {
         final List<ValueAndTimestamp<String>> aggregatedOrder = this.timestampedKeyValueStoreApp
-                .getValuesForRange("Burger", "Sandwich");
+                .getValuesForRange("FALL2024", "SUMMER2024");
 
         this.softly.assertThat(aggregatedOrder)
                 .hasSize(3)
-                .anySatisfy(value -> this.softly.assertThat(value)
-                        .isEqualTo(ValueAndTimestamp.make("FALL2024", 40)))
-                .anySatisfy(value -> this.softly.assertThat(value)
-                        .isEqualTo(ValueAndTimestamp.make("WINTER2024", 20)))
-                .anySatisfy(value -> this.softly.assertThat(value)
-                        .isEqualTo(ValueAndTimestamp.make("SUMMER2024", 10)));
+                .anySatisfy(promotion -> this.softly.assertThat(promotion)
+                        .isEqualTo(ValueAndTimestamp.make("Sandwich", 40)))
+                .anySatisfy(promotion -> this.softly.assertThat(promotion)
+                        .isEqualTo(ValueAndTimestamp.make("Sushi", 30)))
+                .anySatisfy(promotion -> this.softly.assertThat(promotion)
+                        .isEqualTo(ValueAndTimestamp.make("Pizza", 10)));
     }
 
 }

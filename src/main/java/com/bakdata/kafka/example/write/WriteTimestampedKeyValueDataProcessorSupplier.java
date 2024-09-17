@@ -51,12 +51,12 @@ public class WriteTimestampedKeyValueDataProcessorSupplier implements FixedKeyPr
 
         @Override
         public void process(final FixedKeyRecord<String, String> record) {
-            final String key = record.key();
+            final String menuItem = record.key();
             final String value = record.value();
             try {
                 final Promotion promotion = MAPPER.readValue(value, Promotion.class);
-                log.debug("Writing recoder with key '{}' and promotion '{}' in store '{}'", key, promotion, STORE);
-                this.timestampedKeyValueStore.put(key, ValueAndTimestamp.make(promotion.code(), promotion.endTimestamp()));
+                log.debug("Writing recoder with menuItem '{}' and promotion code '{}' in store '{}'", menuItem, promotion, STORE);
+                this.timestampedKeyValueStore.put(promotion.code(), ValueAndTimestamp.make(menuItem, promotion.endTimestamp()));
             } catch (final JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
