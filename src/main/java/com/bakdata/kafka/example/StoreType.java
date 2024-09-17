@@ -5,7 +5,6 @@ import com.bakdata.kafka.example.model.Order;
 import com.bakdata.kafka.example.read.*;
 import com.bakdata.kafka.example.utils.OrderTimeExtractor;
 import com.bakdata.kafka.example.utils.Utils;
-import com.bakdata.kafka.example.write.WriteKeyValueDataProcessorSupplier;
 import com.bakdata.kafka.example.write.WriteTimestampedKeyValueDataProcessorSupplier;
 import com.bakdata.kafka.example.write.WriteVersionedKeyValueDataProcessorSupplier;
 import lombok.Getter;
@@ -33,7 +32,7 @@ public enum StoreType {
         public void addTopology(final StreamsBuilder builder) {
             final KStream<String, String> inputStream = builder.stream(MENU_ITEM_DESCRIPTION_TOPIC);
 
-            inputStream.processValues(new WriteKeyValueDataProcessorSupplier());
+            inputStream.toTable(Materialized.as(this.getStoreName()));
         }
     },
     TIMESTAMPED_KEY_VALUE("timestamped-kv-store") {
