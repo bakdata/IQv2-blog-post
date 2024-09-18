@@ -33,7 +33,7 @@ public final class TimestampedKeyValueOrderService implements Service<String, Va
         return new TimestampedKeyValueOrderService(Storage.create(streams, storeName));
     }
 
-    private static <K, V> List<ValueAndTimestamp<V>> extractStateQueryResults(final StateQueryResult<KeyValueIterator<K, ValueAndTimestamp<V>>> result) {
+    private static <K, V> List<ValueAndTimestamp<V>> gatherQueryResults(final StateQueryResult<KeyValueIterator<K, ValueAndTimestamp<V>>> result) {
         final Map<Integer, QueryResult<KeyValueIterator<K, ValueAndTimestamp<V>>>> allPartitionsResult =
                 result.getPartitionResults();
         final List<ValueAndTimestamp<V>> aggregationResult = new ArrayList<>();
@@ -82,7 +82,7 @@ public final class TimestampedKeyValueOrderService implements Service<String, Va
                 .findFirst()
                 .map(metadata -> {
                     final StateQueryResult<KeyValueIterator<String, ValueAndTimestamp<String>>> stateQueryResult = queryInstance(this.storage, metadata, rangeQuery);
-                    return extractStateQueryResults(stateQueryResult);
+                    return gatherQueryResults(stateQueryResult);
                 })
                 .orElse(Collections.emptyList());
     }

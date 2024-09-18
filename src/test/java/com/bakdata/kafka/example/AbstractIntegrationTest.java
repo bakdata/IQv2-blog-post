@@ -17,7 +17,7 @@ import static net.mguenther.kafka.junit.EmbeddedKafkaCluster.provisionWith;
 
 @ExtendWith(SoftAssertionsExtension.class)
 abstract class AbstractIntegrationTest {
-    private static final int SLEEP_TIME_TO_INGEST = 3000;
+    private static final int SLEEP_TIME_TO_INGEST = 5000;
 
     private static final int NUMBER_OF_PARTITIONS = 3;
 

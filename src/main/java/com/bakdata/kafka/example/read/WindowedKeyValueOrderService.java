@@ -36,7 +36,7 @@ public final class WindowedKeyValueOrderService implements Service<String, Long>
         return new WindowedKeyValueOrderService(Storage.create(streams, storeName));
     }
 
-    private static <K, V> List<V> extractStateQueryResults(final StateQueryResult<KeyValueIterator<Windowed<K>, ValueAndTimestamp<V>>> result) {
+    private static <K, V> List<V> gatherQueryResults(final StateQueryResult<KeyValueIterator<Windowed<K>, ValueAndTimestamp<V>>> result) {
         final Map<Integer, QueryResult<KeyValueIterator<Windowed<K>, ValueAndTimestamp<V>>>> allPartitionsResult =
                 result.getPartitionResults();
         final List<V> aggregationResult = new ArrayList<>();
@@ -90,7 +90,7 @@ public final class WindowedKeyValueOrderService implements Service<String, Long>
                 .findFirst()
                 .map(metadata -> {
                     final StateQueryResult<KeyValueIterator<Windowed<String>, ValueAndTimestamp<Long>>> stateQueryResult = queryInstance(this.storage, metadata, rangeQuery);
-                    return extractStateQueryResults(stateQueryResult);
+                    return gatherQueryResults(stateQueryResult);
                 })
                 .orElse(Collections.emptyList());
     }

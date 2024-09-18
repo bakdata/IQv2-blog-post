@@ -16,7 +16,8 @@ import org.apache.kafka.streams.state.KeyValueIterator;
 
 import java.util.*;
 
-import static com.bakdata.kafka.example.utils.Utils.queryInstance;
+import static com.bakdata.kafka.example.utils.QueryHelper.queryInstance;
+
 
 /**
  * Contains services for accessing the {@link org.apache.kafka.streams.state.SessionStore}
@@ -32,7 +33,7 @@ public class SessionedKeyValueOrderService implements Service<String, CustomerSe
         return new SessionedKeyValueOrderService(Storage.create(streams, storeName));
     }
 
-    private static <K> List<CustomerSession> extractStateQueryResults(final StateQueryResult<KeyValueIterator<Windowed<K>, Long>> result) {
+    private static <K> List<CustomerSession> gatherQueryResults(final StateQueryResult<KeyValueIterator<Windowed<K>, Long>> result) {
         final Map<Integer, QueryResult<KeyValueIterator<Windowed<K>, Long>>> allPartitionsResult =
                 result.getPartitionResults();
         final List<CustomerSession> aggregationResult = new ArrayList<>();
@@ -59,7 +60,7 @@ public class SessionedKeyValueOrderService implements Service<String, CustomerSe
                 .findFirst()
                 .map(metadata -> {
                     final StateQueryResult<KeyValueIterator<Windowed<String>, Long>> stateQueryResult = queryInstance(this.storage, metadata, rangeQuery);
-                    return extractStateQueryResults(stateQueryResult);
+                    return gatherQueryResults(stateQueryResult);
                 })
                 .orElse(Collections.emptyList());
     }

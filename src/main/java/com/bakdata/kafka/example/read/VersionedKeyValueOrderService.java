@@ -33,7 +33,7 @@ public class VersionedKeyValueOrderService implements Service<String, Integer> {
         return new VersionedKeyValueOrderService(Storage.create(streams, storeName));
     }
 
-    private static <V> List<V> extractStateQueryResults(final StateQueryResult<VersionedRecordIterator<V>> result) {
+    private static <V> List<V> gatherQueryResults(final StateQueryResult<VersionedRecordIterator<V>> result) {
         final Map<Integer, QueryResult<VersionedRecordIterator<V>>> allPartitionsResult =
                 result.getPartitionResults();
         final List<V> aggregationResult = new ArrayList<>();
@@ -94,7 +94,7 @@ public class VersionedKeyValueOrderService implements Service<String, Integer> {
                 .findFirst()
                 .map(metadata -> {
                     final StateQueryResult<VersionedRecordIterator<Integer>> stateQueryResult = queryInstance(this.storage, metadata, multiVersionedKeyQuery);
-                    return extractStateQueryResults(stateQueryResult);
+                    return gatherQueryResults(stateQueryResult);
                 })
                 .orElse(Collections.emptyList());
     }

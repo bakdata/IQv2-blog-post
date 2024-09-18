@@ -15,7 +15,7 @@ import org.apache.kafka.streams.state.KeyValueIterator;
 
 import java.util.*;
 
-import static com.bakdata.kafka.example.utils.Utils.queryInstance;
+import static com.bakdata.kafka.example.utils.QueryHelper.queryInstance;
 
 /**
  * Contains services for accessing the {@link org.apache.kafka.streams.state.KeyValueStore}
@@ -32,7 +32,7 @@ public final class KeyValueOrderService implements Service<String, String> {
         return new KeyValueOrderService(Storage.create(streams, storeName));
     }
 
-    private static <K, V> List<V> extractStateQueryResults(final StateQueryResult<KeyValueIterator<K, V>> result) {
+    private static <K, V> List<V> gatherQueryResults(final StateQueryResult<KeyValueIterator<K, V>> result) {
         final Map<Integer, QueryResult<KeyValueIterator<K, V>>> allPartitionsResult =
                 result.getPartitionResults();
         final List<V> aggregationResult = new ArrayList<>();
@@ -81,7 +81,7 @@ public final class KeyValueOrderService implements Service<String, String> {
                 .findFirst()
                 .map(metadata -> {
                     final StateQueryResult<KeyValueIterator<String, String>> stateQueryResult = queryInstance(this.storage, metadata, rangeQuery);
-                    return extractStateQueryResults(stateQueryResult);
+                    return gatherQueryResults(stateQueryResult);
                 })
                 .orElse(Collections.emptyList());
     }
