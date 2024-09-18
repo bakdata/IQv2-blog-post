@@ -71,7 +71,7 @@ public final class KeyValueOrderService implements Service<String, String> {
 
     @Override
     public List<String> getValuesForRange(final String lower, final String upper) {
-        final RangeQuery<String, String> rangeQuery = RangeQuery.withRange(lower, upper);
+        final Query<KeyValueIterator<String, String>> rangeQuery = RangeQuery.withRange(lower, upper);
 
         final Collection<StreamsMetadata> streamsMetadata =
                 this.storage.getStreams()

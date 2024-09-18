@@ -46,7 +46,7 @@ public final class TimestampedKeyValueOrderService implements Service<String, Va
     }
 
     @Override
-    public Optional<ValueAndTimestamp<String>> getValueForKey(@NonNull final String promotionCode) {
+    public Optional<ValueAndTimestamp<String>> getValueForKey(final @NonNull String promotionCode) {
         log.debug("Querying key '{}'", promotionCode);
 
         final TimestampedKeyQuery<String, String> keyQuery = TimestampedKeyQuery.withKey(promotionCode);

@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyQueryMetadata;
 import org.apache.kafka.streams.StreamsMetadata;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class VersionedKeyValueOrderService implements Service<String, Integer> {
+    private static final Serializer<String> STRING_SERIALIZER = Serdes.String().serializer();
     private final @NonNull Storage storage;
 
     public static VersionedKeyValueOrderService setUp(final KafkaStreams streams) {
@@ -59,7 +61,7 @@ public class VersionedKeyValueOrderService implements Service<String, Integer> {
                 VersionedKeyQuery.<String, Integer>withKey(menuItem).asOf(asOf);
 
         final KeyQueryMetadata keyQueryMetadata = this.storage.getStreams()
-                .queryMetadataForKey(this.storage.getStoreName(), menuItem, Serdes.String().serializer());
+                .queryMetadataForKey(this.storage.getStoreName(), menuItem, STRING_SERIALIZER);
 
         final StateQueryRequest<VersionedRecord<Integer>> queryRequest = this.storage.getInStore()
                 .withQuery(query)
@@ -92,7 +94,6 @@ public class VersionedKeyValueOrderService implements Service<String, Integer> {
                 .findFirst()
                 .map(metadata -> this.queryInstance(metadata, multiVersionedKeyQuery))
                 .orElse(Collections.emptyList());
-
     }
 
     private List<Integer> queryInstance(final StreamsMetadata metadata, final Query<VersionedRecordIterator<Integer>> rangeQuery) {

@@ -24,13 +24,11 @@ import java.util.stream.Collectors;
 public class SessionedKeyValueOrderService implements Service<String, CustomerSession> {
     private final @NonNull Storage storage;
 
-
     public static SessionedKeyValueOrderService setUp(final KafkaStreams streams) {
         final String storeName = StoreType.SESSION_KEY_VALUE.getStoreName();
         log.info("Setting up order service for store '{}'", storeName);
         return new SessionedKeyValueOrderService(Storage.create(streams, storeName));
     }
-
 
     private static <K> List<CustomerSession> extractStateQueryResults(final StateQueryResult<KeyValueIterator<Windowed<K>, Long>> result) {
         final Map<Integer, QueryResult<KeyValueIterator<Windowed<K>, Long>>> allPartitionsResult =

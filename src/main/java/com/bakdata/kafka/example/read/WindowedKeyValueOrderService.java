@@ -73,6 +73,7 @@ public final class WindowedKeyValueOrderService implements Service<String, Long>
             onlyPartitionResult.getResult()
                     .forEachRemaining(result -> results.add(result.value.value()));
         }
+
         return results;
     }
 
