@@ -16,6 +16,7 @@ import org.apache.kafka.streams.state.ValueAndTimestamp;
 
 import java.util.*;
 
+import static com.bakdata.kafka.example.utils.QueryHelper.gatherQueryResults;
 import static com.bakdata.kafka.example.utils.QueryHelper.queryInstance;
 
 /**
@@ -31,18 +32,6 @@ public final class TimestampedKeyValueOrderService implements Service<String, Va
         final String storeName = StoreType.TIMESTAMPED_KEY_VALUE.getStoreName();
         log.info("Setting up order service for store '{}'", storeName);
         return new TimestampedKeyValueOrderService(Storage.create(streams, storeName));
-    }
-
-    private static <K, V> List<ValueAndTimestamp<V>> gatherQueryResults(final StateQueryResult<KeyValueIterator<K, ValueAndTimestamp<V>>> result) {
-        final Map<Integer, QueryResult<KeyValueIterator<K, ValueAndTimestamp<V>>>> allPartitionsResult =
-                result.getPartitionResults();
-        final List<ValueAndTimestamp<V>> aggregationResult = new ArrayList<>();
-        allPartitionsResult.forEach(
-                (key, queryResult) ->
-                        queryResult.getResult()
-                                .forEachRemaining(kv -> aggregationResult.add(kv.value))
-        );
-        return aggregationResult;
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.bakdata.kafka.example.read;
 
 import com.bakdata.kafka.example.StoreType;
+import com.bakdata.kafka.example.utils.QueryHelper;
 import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -32,10 +33,10 @@ public final class KeyValueOrderService implements Service<String, String> {
         return new KeyValueOrderService(Storage.create(streams, storeName));
     }
 
-    private static <K, V> List<V> gatherQueryResults(final StateQueryResult<KeyValueIterator<K, V>> result) {
-        final Map<Integer, QueryResult<KeyValueIterator<K, V>>> allPartitionsResult =
+    private static List<String> gatherQueryResults(final StateQueryResult<KeyValueIterator<String, String>> result) {
+        final Map<Integer, QueryResult<KeyValueIterator<String, String>>> allPartitionsResult =
                 result.getPartitionResults();
-        final List<V> aggregationResult = new ArrayList<>();
+        final List<String> aggregationResult = new ArrayList<>();
         allPartitionsResult.forEach(
                 (key, queryResult) ->
                         queryResult.getResult()
@@ -81,7 +82,7 @@ public final class KeyValueOrderService implements Service<String, String> {
                 .findFirst()
                 .map(metadata -> {
                     final StateQueryResult<KeyValueIterator<String, String>> stateQueryResult = queryInstance(this.storage, metadata, rangeQuery);
-                    return gatherQueryResults(stateQueryResult);
+                    return QueryHelper.gatherQueryResults(stateQueryResult);
                 })
                 .orElse(Collections.emptyList());
     }

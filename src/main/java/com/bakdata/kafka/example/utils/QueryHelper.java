@@ -3,12 +3,14 @@ package com.bakdata.kafka.example.utils;
 import com.bakdata.kafka.example.read.Storage;
 import lombok.experimental.UtilityClass;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsMetadata;
 import org.apache.kafka.streams.query.Query;
+import org.apache.kafka.streams.query.QueryResult;
 import org.apache.kafka.streams.query.StateQueryRequest;
 import org.apache.kafka.streams.query.StateQueryResult;
 
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @UtilityClass
@@ -44,5 +46,17 @@ public class QueryHelper {
 
         return storage.getStreams()
                 .query(queryRequest);
+    }
+
+    public static <K, V, R extends Iterator<KeyValue<K, V>>> List<V> gatherQueryResults(final StateQueryResult<R> result) {
+        final Map<Integer, QueryResult<R>> allPartitionsResult =
+                result.getPartitionResults();
+        final List<V> aggregationResult = new ArrayList<>();
+        allPartitionsResult.forEach(
+                (key, queryResult) ->
+                        queryResult.getResult()
+                                .forEachRemaining(kv -> aggregationResult.add(kv.value))
+        );
+        return aggregationResult;
     }
 }

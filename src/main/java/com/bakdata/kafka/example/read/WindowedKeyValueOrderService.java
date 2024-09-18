@@ -19,6 +19,7 @@ import org.apache.kafka.streams.state.WindowStoreIterator;
 import java.time.Instant;
 import java.util.*;
 
+import static com.bakdata.kafka.example.utils.QueryHelper.gatherQueryResults;
 import static com.bakdata.kafka.example.utils.QueryHelper.queryInstance;
 
 /**
@@ -34,18 +35,6 @@ public final class WindowedKeyValueOrderService implements Service<String, Long>
         final String storeName = StoreType.WINDOWED_KEY_VALUE.getStoreName();
         log.info("Setting up order service for store '{}'", storeName);
         return new WindowedKeyValueOrderService(Storage.create(streams, storeName));
-    }
-
-    private static <K, V> List<V> gatherQueryResults(final StateQueryResult<KeyValueIterator<Windowed<K>, ValueAndTimestamp<V>>> result) {
-        final Map<Integer, QueryResult<KeyValueIterator<Windowed<K>, ValueAndTimestamp<V>>>> allPartitionsResult =
-                result.getPartitionResults();
-        final List<V> aggregationResult = new ArrayList<>();
-        allPartitionsResult.forEach(
-                (key, queryResult) ->
-                        queryResult.getResult()
-                                .forEachRemaining(kv -> aggregationResult.add(kv.value.value()))
-        );
-        return aggregationResult;
     }
 
     @Override
@@ -90,7 +79,7 @@ public final class WindowedKeyValueOrderService implements Service<String, Long>
                 .findFirst()
                 .map(metadata -> {
                     final StateQueryResult<KeyValueIterator<Windowed<String>, ValueAndTimestamp<Long>>> stateQueryResult = queryInstance(this.storage, metadata, rangeQuery);
-                    return gatherQueryResults(stateQueryResult);
+                    return gatherQueryResults(stateQueryResult).stream().map(ValueAndTimestamp::value).toList();
                 })
                 .orElse(Collections.emptyList());
     }

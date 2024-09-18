@@ -33,8 +33,8 @@ public class SessionedKeyValueOrderService implements Service<String, CustomerSe
         return new SessionedKeyValueOrderService(Storage.create(streams, storeName));
     }
 
-    private static <K> List<CustomerSession> gatherQueryResults(final StateQueryResult<KeyValueIterator<Windowed<K>, Long>> result) {
-        final Map<Integer, QueryResult<KeyValueIterator<Windowed<K>, Long>>> allPartitionsResult =
+    private static List<CustomerSession> gatherQueryResults(final StateQueryResult<KeyValueIterator<Windowed<String>, Long>> result) {
+        final Map<Integer, QueryResult<KeyValueIterator<Windowed<String>, Long>>> allPartitionsResult =
                 result.getPartitionResults();
         final List<CustomerSession> aggregationResult = new ArrayList<>();
         allPartitionsResult.forEach(
