@@ -18,18 +18,21 @@ import java.util.stream.Collectors;
 import static java.time.ZoneOffset.UTC;
 
 @UtilityClass
-public class Utils {
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+public class QueryHelper {
 
-    public LocalDateTime toLocalDateTime(final Long timestamp) {
-        return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), UTC);
-    }
+    public static <R> StateQueryResult<R> queryInstance(final Storage storage, final StreamsMetadata metadata, final Query<R> rangeQuery) {
+        final Set<Integer> topicPartitions = metadata.topicPartitions()
+                .stream()
+                .map(TopicPartition::partition)
+                .collect(Collectors.toSet());
 
-    public <T> T readToObject(final String jsonString, final Class<T> clazz) {
-        try {
-            return MAPPER.readValue(jsonString, clazz);
-        } catch (final JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        final StateQueryRequest<R> queryRequest =
+                storage.getInStore()
+                        .withQuery(rangeQuery)
+                        .withPartitions(topicPartitions)
+                        .enableExecutionInfo();
+
+        return storage.getStreams()
+                .query(queryRequest);
     }
 }

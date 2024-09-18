@@ -5,7 +5,6 @@ import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.streams.KafkaStreams;
@@ -15,7 +14,8 @@ import org.apache.kafka.streams.query.*;
 import org.apache.kafka.streams.state.KeyValueIterator;
 
 import java.util.*;
-import java.util.stream.Collectors;
+
+import static com.bakdata.kafka.example.utils.Utils.queryInstance;
 
 /**
  * Contains services for accessing the {@link org.apache.kafka.streams.state.KeyValueStore}
@@ -79,26 +79,11 @@ public final class KeyValueOrderService implements Service<String, String> {
 
         return streamsMetadata.stream()
                 .findFirst()
-                .map(metadata -> this.queryInstance(metadata, rangeQuery))
+                .map(metadata -> {
+                    final StateQueryResult<KeyValueIterator<String, String>> stateQueryResult = queryInstance(this.storage, metadata, rangeQuery);
+                    return extractStateQueryResults(stateQueryResult);
+                })
                 .orElse(Collections.emptyList());
-    }
-
-    private List<String> queryInstance(final StreamsMetadata metadata, final Query<KeyValueIterator<String, String>> rangeQuery) {
-        final Set<Integer> topicPartitions = metadata.topicPartitions()
-                .stream()
-                .map(TopicPartition::partition)
-                .collect(Collectors.toSet());
-
-        final StateQueryRequest<KeyValueIterator<String, String>> queryRequest =
-                this.storage.getInStore()
-                        .withQuery(rangeQuery)
-                        .withPartitions(topicPartitions)
-                        .enableExecutionInfo();
-
-        final StateQueryResult<KeyValueIterator<String, String>> stateQueryResult = this.storage.getStreams()
-                .query(queryRequest);
-
-        return extractStateQueryResults(stateQueryResult);
     }
 
     @Override

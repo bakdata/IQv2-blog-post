@@ -5,16 +5,18 @@ import com.bakdata.kafka.example.model.CustomerSession;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsMetadata;
 import org.apache.kafka.streams.kstream.Window;
 import org.apache.kafka.streams.kstream.Windowed;
-import org.apache.kafka.streams.query.*;
+import org.apache.kafka.streams.query.QueryResult;
+import org.apache.kafka.streams.query.StateQueryResult;
+import org.apache.kafka.streams.query.WindowRangeQuery;
 import org.apache.kafka.streams.state.KeyValueIterator;
 
 import java.util.*;
-import java.util.stream.Collectors;
+
+import static com.bakdata.kafka.example.utils.Utils.queryInstance;
 
 /**
  * Contains services for accessing the {@link org.apache.kafka.streams.state.SessionStore}
@@ -55,26 +57,11 @@ public class SessionedKeyValueOrderService implements Service<String, CustomerSe
 
         return streamsMetadata.stream()
                 .findFirst()
-                .map(metadata -> this.queryInstance(metadata, rangeQuery))
+                .map(metadata -> {
+                    final StateQueryResult<KeyValueIterator<Windowed<String>, Long>> stateQueryResult = queryInstance(this.storage, metadata, rangeQuery);
+                    return extractStateQueryResults(stateQueryResult);
+                })
                 .orElse(Collections.emptyList());
-    }
-
-    private List<CustomerSession> queryInstance(final StreamsMetadata metadata, final Query<KeyValueIterator<Windowed<String>, Long>> rangeQuery) {
-        final Set<Integer> topicPartitions = metadata.topicPartitions()
-                .stream()
-                .map(TopicPartition::partition)
-                .collect(Collectors.toSet());
-
-        final StateQueryRequest<KeyValueIterator<Windowed<String>, Long>> queryRequest =
-                this.storage.getInStore()
-                        .withQuery(rangeQuery)
-                        .withPartitions(topicPartitions)
-                        .enableExecutionInfo();
-
-        final StateQueryResult<KeyValueIterator<Windowed<String>, Long>> stateQueryResult = this.storage.getStreams()
-                .query(queryRequest);
-
-        return extractStateQueryResults(stateQueryResult);
     }
 
     @Override

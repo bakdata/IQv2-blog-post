@@ -4,7 +4,6 @@ import com.bakdata.kafka.example.StoreType;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.streams.KafkaStreams;
@@ -16,7 +15,8 @@ import org.apache.kafka.streams.state.VersionedRecordIterator;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.stream.Collectors;
+
+import static com.bakdata.kafka.example.utils.QueryHelper.queryInstance;
 
 /**
  * Contains services for accessing the {@link org.apache.kafka.streams.state.VersionedKeyValueStore}
@@ -92,26 +92,11 @@ public class VersionedKeyValueOrderService implements Service<String, Integer> {
 
         return streamsMetadata.stream()
                 .findFirst()
-                .map(metadata -> this.queryInstance(metadata, multiVersionedKeyQuery))
+                .map(metadata -> {
+                    final StateQueryResult<VersionedRecordIterator<Integer>> stateQueryResult = queryInstance(this.storage, metadata, multiVersionedKeyQuery);
+                    return extractStateQueryResults(stateQueryResult);
+                })
                 .orElse(Collections.emptyList());
-    }
-
-    private List<Integer> queryInstance(final StreamsMetadata metadata, final Query<VersionedRecordIterator<Integer>> rangeQuery) {
-        final Set<Integer> topicPartitions = metadata.topicPartitions()
-                .stream()
-                .map(TopicPartition::partition)
-                .collect(Collectors.toSet());
-
-        final StateQueryRequest<VersionedRecordIterator<Integer>> queryRequest =
-                this.storage.getInStore()
-                        .withQuery(rangeQuery)
-                        .withPartitions(topicPartitions)
-                        .enableExecutionInfo();
-
-        final StateQueryResult<VersionedRecordIterator<Integer>> stateQueryResult = this.storage.getStreams()
-                .query(queryRequest);
-
-        return extractStateQueryResults(stateQueryResult);
     }
 
     @Override
