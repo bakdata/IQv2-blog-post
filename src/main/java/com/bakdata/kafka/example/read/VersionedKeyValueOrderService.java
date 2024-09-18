@@ -17,6 +17,9 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Contains services for accessing the {@link org.apache.kafka.streams.state.VersionedKeyValueStore}
+ */
 @RequiredArgsConstructor
 @Slf4j
 public class VersionedKeyValueOrderService implements Service<String, Integer> {
@@ -41,7 +44,7 @@ public class VersionedKeyValueOrderService implements Service<String, Integer> {
     }
 
     @Override
-    public Optional<Integer> getValueForKey(@NonNull final String key) {
+    public Optional<Integer> getValueForKey(final @NonNull String key) {
         throw new UnsupportedOperationException("Not supported yet");
     }
 
@@ -51,7 +54,7 @@ public class VersionedKeyValueOrderService implements Service<String, Integer> {
     }
 
     @Override
-    public Optional<Integer> getVersionedValueForKey(@NonNull final String menuItem, final Instant asOf) {
+    public Optional<Integer> getVersionedValueForKey(final @NonNull String menuItem, final Instant asOf) {
         final VersionedKeyQuery<String, Integer> query = asOf == null ? VersionedKeyQuery.withKey(menuItem) :
                 VersionedKeyQuery.<String, Integer>withKey(menuItem).asOf(asOf);
 
@@ -73,40 +76,41 @@ public class VersionedKeyValueOrderService implements Service<String, Integer> {
         return Optional.empty();
     }
 
-    // TODO: Order is ascending timestamp do we need to change or configurable it?
     @Override
-    public List<Integer> getVersionedValuesForRange(@NonNull final String key, final Instant from, final Instant to) {
+    public List<Integer> getVersionedValuesForRange(final @NonNull String key, final Instant from, final Instant to) {
         final MultiVersionedKeyQuery<String, Integer> multiVersionedKeyQuery = MultiVersionedKeyQuery
                 .<String, Integer>withKey(key)
                 .fromTime(from)
                 .toTime(to)
                 .withAscendingTimestamps();
 
-        final List<Integer> results = new ArrayList<>();
-
         final Collection<StreamsMetadata> streamsMetadata =
                 this.storage.getStreams()
                         .streamsMetadataForStore(this.storage.getStoreName());
 
-        for (final StreamsMetadata metadata : streamsMetadata) {
-            final Set<Integer> topicPartitions = metadata.topicPartitions()
-                    .stream()
-                    .map(TopicPartition::partition)
-                    .collect(Collectors.toSet());
+        return streamsMetadata.stream()
+                .findFirst()
+                .map(metadata -> this.queryInstance(metadata, multiVersionedKeyQuery))
+                .orElse(Collections.emptyList());
 
-            final StateQueryRequest<VersionedRecordIterator<Integer>> queryRequest =
-                    this.storage.getInStore()
-                            .withQuery(multiVersionedKeyQuery)
-                            .withPartitions(topicPartitions)
-                            .enableExecutionInfo();
+    }
 
-            final StateQueryResult<VersionedRecordIterator<Integer>> stateQueryResult = this.storage.getStreams()
-                    .query(queryRequest);
+    private List<Integer> queryInstance(final StreamsMetadata metadata, final Query<VersionedRecordIterator<Integer>> rangeQuery) {
+        final Set<Integer> topicPartitions = metadata.topicPartitions()
+                .stream()
+                .map(TopicPartition::partition)
+                .collect(Collectors.toSet());
 
-            results.addAll(extractStateQueryResults(stateQueryResult));
-        }
+        final StateQueryRequest<VersionedRecordIterator<Integer>> queryRequest =
+                this.storage.getInStore()
+                        .withQuery(rangeQuery)
+                        .withPartitions(topicPartitions)
+                        .enableExecutionInfo();
 
-        return results;
+        final StateQueryResult<VersionedRecordIterator<Integer>> stateQueryResult = this.storage.getStreams()
+                .query(queryRequest);
+
+        return extractStateQueryResults(stateQueryResult);
     }
 
     @Override

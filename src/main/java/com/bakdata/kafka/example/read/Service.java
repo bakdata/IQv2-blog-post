@@ -7,16 +7,21 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+@FunctionalInterface
 public interface Service<K, V> extends AutoCloseable {
-    Optional<V> getValueForKey(final @NonNull K key);
+    default Optional<V> getValueForKey(final @NonNull K key) {
+        return Optional.empty();
+    }
 
-    List<V> getValuesForRange(final K lower, final K upper);
+    default List<V> getValuesForRange(final K lower, final K upper) {
+        return Collections.emptyList();
+    }
 
     default Optional<V> getVersionedValueForKey(final @NonNull K key, final Instant asOfTime) {
         return Optional.empty();
     }
 
-    default List<V> getVersionedValuesForRange(@NonNull final K key, final Instant from, final Instant to) {
+    default List<V> getVersionedValuesForRange(final @NonNull K key, final Instant from, final Instant to) {
         return Collections.emptyList();
     }
 

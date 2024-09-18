@@ -10,15 +10,15 @@ import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsMetadata;
 import org.apache.kafka.streams.kstream.Window;
 import org.apache.kafka.streams.kstream.Windowed;
-import org.apache.kafka.streams.query.QueryResult;
-import org.apache.kafka.streams.query.StateQueryRequest;
-import org.apache.kafka.streams.query.StateQueryResult;
-import org.apache.kafka.streams.query.WindowRangeQuery;
+import org.apache.kafka.streams.query.*;
 import org.apache.kafka.streams.state.KeyValueIterator;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Contains services for accessing the {@link org.apache.kafka.streams.state.SessionStore}
+ */
 @RequiredArgsConstructor
 @Slf4j
 public class SessionedKeyValueOrderService implements Service<String, CustomerSession> {
@@ -50,32 +50,33 @@ public class SessionedKeyValueOrderService implements Service<String, CustomerSe
     @Override
     public List<CustomerSession> getSessionRangeForKey(final @NonNull String customerId) {
         final WindowRangeQuery<String, Long> rangeQuery = WindowRangeQuery.withKey(customerId);
-        final List<CustomerSession> results = new ArrayList<>();
 
         final Collection<StreamsMetadata> streamsMetadata =
                 this.storage.getStreams()
                         .streamsMetadataForStore(this.storage.getStoreName());
 
-        for (final StreamsMetadata metadata : streamsMetadata) {
-            final Set<Integer> topicPartitions = metadata.topicPartitions()
-                    .stream()
-                    .map(TopicPartition::partition)
-                    .collect(Collectors.toSet());
+        return streamsMetadata.stream()
+                .findFirst()
+                .map(metadata -> this.queryInstance(metadata, rangeQuery))
+                .orElse(Collections.emptyList());
+    }
 
-            final StateQueryRequest<KeyValueIterator<Windowed<String>, Long>> queryRequest =
-                    this.storage.getInStore()
-                            .withQuery(rangeQuery)
-                            .withPartitions(topicPartitions)
-                            .enableExecutionInfo();
+    private List<CustomerSession> queryInstance(final StreamsMetadata metadata, final Query<KeyValueIterator<Windowed<String>, Long>> rangeQuery) {
+        final Set<Integer> topicPartitions = metadata.topicPartitions()
+                .stream()
+                .map(TopicPartition::partition)
+                .collect(Collectors.toSet());
 
-            final StateQueryResult<KeyValueIterator<Windowed<String>, Long>> stateQueryResult =
-                    this.storage.getStreams()
-                            .query(queryRequest);
+        final StateQueryRequest<KeyValueIterator<Windowed<String>, Long>> queryRequest =
+                this.storage.getInStore()
+                        .withQuery(rangeQuery)
+                        .withPartitions(topicPartitions)
+                        .enableExecutionInfo();
 
-            results.addAll(extractStateQueryResults(stateQueryResult));
-        }
+        final StateQueryResult<KeyValueIterator<Windowed<String>, Long>> stateQueryResult = this.storage.getStreams()
+                .query(queryRequest);
 
-        return results;
+        return extractStateQueryResults(stateQueryResult);
     }
 
     @Override
@@ -85,15 +86,4 @@ public class SessionedKeyValueOrderService implements Service<String, CustomerSe
         this.storage.getStreams()
                 .close();
     }
-
-    @Override
-    public Optional<CustomerSession> getValueForKey(final @NonNull String key) {
-        return Optional.empty();
-    }
-
-    @Override
-    public List<CustomerSession> getValuesForRange(final String lower, final String upper) {
-        return List.of();
-    }
-
 }

@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyQueryMetadata;
 import org.apache.kafka.streams.StreamsMetadata;
@@ -20,13 +21,13 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
-
 /**
- * Contains services for accessing the (versioned) state store
+ * Contains services for accessing the {@link org.apache.kafka.streams.state.WindowStore}
  */
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
 public final class WindowedKeyValueOrderService implements Service<String, Long> {
+    private static final Serializer<String> STRING_SERIALIZER = Serdes.String().serializer();
     private final @NonNull Storage storage;
 
     public static WindowedKeyValueOrderService setUp(final KafkaStreams streams) {
@@ -55,7 +56,7 @@ public final class WindowedKeyValueOrderService implements Service<String, Long>
                 WindowKeyQuery.withKeyAndWindowStartRange(menuItem, from, to.minusMillis(1));
 
         final KeyQueryMetadata keyQueryMetadata = this.storage.getStreams()
-                .queryMetadataForKey(this.storage.getStoreName(), menuItem, Serdes.String().serializer());
+                .queryMetadataForKey(this.storage.getStoreName(), menuItem, STRING_SERIALIZER);
 
         final StateQueryRequest<WindowStoreIterator<ValueAndTimestamp<Long>>> queryRequest =
                 this.storage.getInStore()
@@ -81,42 +82,31 @@ public final class WindowedKeyValueOrderService implements Service<String, Long>
 
         final WindowRangeQuery<String, ValueAndTimestamp<Long>> rangeQuery = WindowRangeQuery.withWindowStartRange(from, to);
 
-        final List<Long> results = new ArrayList<>();
-
         final Collection<StreamsMetadata> streamsMetadata =
                 this.storage.getStreams()
                         .streamsMetadataForStore(this.storage.getStoreName());
-
-        for (final StreamsMetadata metadata : streamsMetadata) {
-            final Set<Integer> topicPartitions = metadata.topicPartitions()
-                    .stream()
-                    .map(TopicPartition::partition)
-                    .collect(Collectors.toSet());
-
-            final StateQueryRequest<KeyValueIterator<Windowed<String>, ValueAndTimestamp<Long>>> queryRequest =
-                    this.storage.getInStore()
-                            .withQuery(rangeQuery)
-                            .withPartitions(topicPartitions)
-                            .enableExecutionInfo();
-
-            final StateQueryResult<KeyValueIterator<Windowed<String>, ValueAndTimestamp<Long>>> stateQueryResult =
-                    this.storage.getStreams()
-                            .query(queryRequest);
-
-            results.addAll(extractStateQueryResults(stateQueryResult));
-        }
-
-        return results;
+        return streamsMetadata.stream()
+                .findFirst()
+                .map(metadata -> this.queryInstance(metadata, rangeQuery))
+                .orElse(Collections.emptyList());
     }
 
-    @Override
-    public Optional<Long> getValueForKey(final @NonNull String menuItem) {
-        throw new IllegalCallerException("Window Store can not be called for key query.");
-    }
+    private List<Long> queryInstance(final StreamsMetadata metadata, final Query<KeyValueIterator<Windowed<String>, ValueAndTimestamp<Long>>> rangeQuery) {
+        final Set<Integer> topicPartitions = metadata.topicPartitions()
+                .stream()
+                .map(TopicPartition::partition)
+                .collect(Collectors.toSet());
 
-    @Override
-    public List<Long> getValuesForRange(final String lower, final String upper) {
-        throw new IllegalCallerException("Window Store can not be called for range query.");
+        final StateQueryRequest<KeyValueIterator<Windowed<String>, ValueAndTimestamp<Long>>> queryRequest =
+                this.storage.getInStore()
+                        .withQuery(rangeQuery)
+                        .withPartitions(topicPartitions)
+                        .enableExecutionInfo();
+
+        final StateQueryResult<KeyValueIterator<Windowed<String>, ValueAndTimestamp<Long>>> stateQueryResult = this.storage.getStreams()
+                .query(queryRequest);
+
+        return extractStateQueryResults(stateQueryResult);
     }
 
     @Override

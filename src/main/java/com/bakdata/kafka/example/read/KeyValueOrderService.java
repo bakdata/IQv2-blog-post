@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyQueryMetadata;
 import org.apache.kafka.streams.StreamsMetadata;
@@ -17,11 +18,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Contains services for accessing the (versioned) state store
+ * Contains services for accessing the {@link org.apache.kafka.streams.state.KeyValueStore}
  */
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
 public final class KeyValueOrderService implements Service<String, String> {
+    private static final Serializer<String> STRING_SERIALIZER = Serdes.String().serializer();
     private final @NonNull Storage storage;
 
     public static KeyValueOrderService setUp(final KafkaStreams streams) {
@@ -43,13 +45,13 @@ public final class KeyValueOrderService implements Service<String, String> {
     }
 
     @Override
-    public Optional<String> getValueForKey(@NonNull final String menuItem) {
+    public Optional<String> getValueForKey(final @NonNull String menuItem) {
         log.debug("Querying menuItem '{}'", menuItem);
 
         final KeyQuery<String, String> keyQuery = KeyQuery.withKey(menuItem);
 
         final KeyQueryMetadata keyQueryMetadata = this.storage.getStreams()
-                .queryMetadataForKey(this.storage.getStoreName(), menuItem, Serdes.String().serializer());
+                .queryMetadataForKey(this.storage.getStoreName(), menuItem, STRING_SERIALIZER);
 
         final StateQueryRequest<String> queryRequest =
                 this.storage.getInStore()
@@ -70,30 +72,33 @@ public final class KeyValueOrderService implements Service<String, String> {
     @Override
     public List<String> getValuesForRange(final String lower, final String upper) {
         final RangeQuery<String, String> rangeQuery = RangeQuery.withRange(lower, upper);
-        final List<String> results = new ArrayList<>();
 
         final Collection<StreamsMetadata> streamsMetadata =
                 this.storage.getStreams()
                         .streamsMetadataForStore(this.storage.getStoreName());
 
-        for (final StreamsMetadata metadata : streamsMetadata) {
-            final Set<Integer> topicPartitions = metadata.topicPartitions()
-                    .stream()
-                    .map(TopicPartition::partition)
-                    .collect(Collectors.toSet());
+        return streamsMetadata.stream()
+                .findFirst()
+                .map(metadata -> this.queryInstance(metadata, rangeQuery))
+                .orElse(Collections.emptyList());
+    }
 
-            final StateQueryRequest<KeyValueIterator<String, String>> queryRequest =
-                    this.storage.getInStore()
-                            .withQuery(rangeQuery)
-                            .withPartitions(topicPartitions)
-                            .enableExecutionInfo();
+    private List<String> queryInstance(final StreamsMetadata metadata, final Query<KeyValueIterator<String, String>> rangeQuery) {
+        final Set<Integer> topicPartitions = metadata.topicPartitions()
+                .stream()
+                .map(TopicPartition::partition)
+                .collect(Collectors.toSet());
 
-            final StateQueryResult<KeyValueIterator<String, String>> stateQueryResult = this.storage.getStreams()
-                    .query(queryRequest);
+        final StateQueryRequest<KeyValueIterator<String, String>> queryRequest =
+                this.storage.getInStore()
+                        .withQuery(rangeQuery)
+                        .withPartitions(topicPartitions)
+                        .enableExecutionInfo();
 
-            results.addAll(extractStateQueryResults(stateQueryResult));
-        }
-        return results;
+        final StateQueryResult<KeyValueIterator<String, String>> stateQueryResult = this.storage.getStreams()
+                .query(queryRequest);
+
+        return extractStateQueryResults(stateQueryResult);
     }
 
     @Override
