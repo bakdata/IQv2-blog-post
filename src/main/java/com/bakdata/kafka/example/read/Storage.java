@@ -9,8 +9,12 @@ import org.apache.kafka.streams.query.StateQueryRequest;
 
 import static org.apache.kafka.streams.query.StateQueryRequest.inStore;
 
-@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+/**
+ * Storage class that encapsulates access to a Kafka Streams instance, a store name, and an in-store query
+ * configuration. It provides a factory method to create instances of the class with a private constructor.
+ */
 @Getter
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Storage {
     private final @NonNull KafkaStreams streams;
     private final @NonNull String storeName;

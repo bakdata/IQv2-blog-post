@@ -18,7 +18,7 @@ import java.util.stream.Stream;
 class VersionedKeyValueIntegrationTest extends AbstractIntegrationTest {
 
     private final Service<String, Integer> versionedKeyValueStoreApp =
-            KeyValueStoreApplication.startApplication(StoreType.VERSIONED_KEY_VALUE);
+            RestaurantManagmentApplication.startApplication(StoreType.VERSIONED_KEY_VALUE);
 
     private static Stream<Arguments> getMenuItemAndPriceAndDateTime() {
         return Stream.of(

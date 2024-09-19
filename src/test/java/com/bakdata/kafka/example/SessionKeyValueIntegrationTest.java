@@ -18,7 +18,7 @@ import static java.lang.Thread.sleep;
 class SessionKeyValueIntegrationTest extends AbstractIntegrationTest {
 
     private final Service<String, CustomerSession> sessionKeyValueStoreApp =
-            KeyValueStoreApplication.startApplication(StoreType.SESSION_KEY_VALUE);
+            RestaurantManagmentApplication.startApplication(StoreType.SESSION_KEY_VALUE);
 
     @Override
     protected Collection<KeyValue<String, String>> createRecords() {

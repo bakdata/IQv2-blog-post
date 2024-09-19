@@ -1,6 +1,7 @@
 package com.bakdata.kafka.example.read;
 
 import com.bakdata.kafka.example.StoreType;
+import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,40 +10,36 @@ import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyQueryMetadata;
 import org.apache.kafka.streams.StreamsMetadata;
-import org.apache.kafka.streams.query.*;
+import org.apache.kafka.streams.query.MultiVersionedKeyQuery;
+import org.apache.kafka.streams.query.QueryResult;
+import org.apache.kafka.streams.query.StateQueryRequest;
+import org.apache.kafka.streams.query.StateQueryResult;
+import org.apache.kafka.streams.query.VersionedKeyQuery;
 import org.apache.kafka.streams.state.VersionedRecord;
 import org.apache.kafka.streams.state.VersionedRecordIterator;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
+import static com.bakdata.kafka.example.utils.QueryHelper.gatherQueryResults;
 import static com.bakdata.kafka.example.utils.QueryHelper.queryInstance;
 
 /**
  * Contains services for accessing the {@link org.apache.kafka.streams.state.VersionedKeyValueStore}
  */
-@RequiredArgsConstructor
 @Slf4j
-public class VersionedKeyValueOrderService implements Service<String, Integer> {
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+public final class VersionedKeyValueRestaurantService implements Service<String, Integer> {
     private static final Serializer<String> STRING_SERIALIZER = Serdes.String().serializer();
     private final @NonNull Storage storage;
 
-    public static VersionedKeyValueOrderService setUp(final KafkaStreams streams) {
+    public static VersionedKeyValueRestaurantService setUp(final KafkaStreams streams) {
         final String storeName = StoreType.VERSIONED_KEY_VALUE.getStoreName();
         log.info("Setting up order service for store '{}'", storeName);
-        return new VersionedKeyValueOrderService(Storage.create(streams, storeName));
-    }
-
-    private static List<Integer> gatherQueryResults(final StateQueryResult<VersionedRecordIterator<Integer>> result) {
-        final Map<Integer, QueryResult<VersionedRecordIterator<Integer>>> allPartitionsResult =
-                result.getPartitionResults();
-        final List<Integer> aggregationResult = new ArrayList<>();
-        allPartitionsResult.forEach(
-                (key, queryResult) ->
-                        queryResult.getResult()
-                                .forEachRemaining(kv -> aggregationResult.add(kv.value()))
-        );
-        return aggregationResult;
+        return new VersionedKeyValueRestaurantService(Storage.create(streams, storeName));
     }
 
     @Override
@@ -94,7 +91,9 @@ public class VersionedKeyValueOrderService implements Service<String, Integer> {
                 .findFirst()
                 .map(metadata -> {
                     final StateQueryResult<VersionedRecordIterator<Integer>> stateQueryResult = queryInstance(this.storage, metadata, multiVersionedKeyQuery);
-                    return gatherQueryResults(stateQueryResult);
+                    return gatherQueryResults(stateQueryResult).stream()
+                            .map(VersionedRecord::value)
+                            .toList();
                 })
                 .orElse(Collections.emptyList());
     }

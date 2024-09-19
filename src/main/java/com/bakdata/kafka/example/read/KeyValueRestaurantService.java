@@ -11,38 +11,34 @@ import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyQueryMetadata;
 import org.apache.kafka.streams.StreamsMetadata;
-import org.apache.kafka.streams.query.*;
+import org.apache.kafka.streams.query.KeyQuery;
+import org.apache.kafka.streams.query.Query;
+import org.apache.kafka.streams.query.QueryResult;
+import org.apache.kafka.streams.query.RangeQuery;
+import org.apache.kafka.streams.query.StateQueryRequest;
+import org.apache.kafka.streams.query.StateQueryResult;
 import org.apache.kafka.streams.state.KeyValueIterator;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 import static com.bakdata.kafka.example.utils.QueryHelper.queryInstance;
 
 /**
  * Contains services for accessing the {@link org.apache.kafka.streams.state.KeyValueStore}
  */
-@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
-public final class KeyValueOrderService implements Service<String, String> {
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+public final class KeyValueRestaurantService implements Service<String, String> {
     private static final Serializer<String> STRING_SERIALIZER = Serdes.String().serializer();
     private final @NonNull Storage storage;
 
-    public static KeyValueOrderService setUp(final KafkaStreams streams) {
+    public static KeyValueRestaurantService setUp(final KafkaStreams streams) {
         final String storeName = StoreType.KEY_VALUE.getStoreName();
         log.info("Setting up order service for store '{}'", storeName);
-        return new KeyValueOrderService(Storage.create(streams, storeName));
-    }
-
-    private static List<String> gatherQueryResults(final StateQueryResult<KeyValueIterator<String, String>> result) {
-        final Map<Integer, QueryResult<KeyValueIterator<String, String>>> allPartitionsResult =
-                result.getPartitionResults();
-        final List<String> aggregationResult = new ArrayList<>();
-        allPartitionsResult.forEach(
-                (key, queryResult) ->
-                        queryResult.getResult()
-                                .forEachRemaining(kv -> aggregationResult.add(kv.value))
-        );
-        return aggregationResult;
+        return new KeyValueRestaurantService(Storage.create(streams, storeName));
     }
 
     @Override
@@ -82,7 +78,10 @@ public final class KeyValueOrderService implements Service<String, String> {
                 .findFirst()
                 .map(metadata -> {
                     final StateQueryResult<KeyValueIterator<String, String>> stateQueryResult = queryInstance(this.storage, metadata, rangeQuery);
-                    return QueryHelper.gatherQueryResults(stateQueryResult);
+                    return QueryHelper.gatherQueryResults(stateQueryResult)
+                            .stream()
+                            .map(kv -> kv.value)
+                            .toList();
                 })
                 .orElse(Collections.emptyList());
     }

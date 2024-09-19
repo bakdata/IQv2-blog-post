@@ -11,13 +11,20 @@ import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyQueryMetadata;
 import org.apache.kafka.streams.StreamsMetadata;
 import org.apache.kafka.streams.kstream.Windowed;
-import org.apache.kafka.streams.query.*;
+import org.apache.kafka.streams.query.QueryResult;
+import org.apache.kafka.streams.query.StateQueryRequest;
+import org.apache.kafka.streams.query.StateQueryResult;
+import org.apache.kafka.streams.query.WindowKeyQuery;
+import org.apache.kafka.streams.query.WindowRangeQuery;
 import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.ValueAndTimestamp;
 import org.apache.kafka.streams.state.WindowStoreIterator;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 import static com.bakdata.kafka.example.utils.QueryHelper.gatherQueryResults;
 import static com.bakdata.kafka.example.utils.QueryHelper.queryInstance;
@@ -25,16 +32,16 @@ import static com.bakdata.kafka.example.utils.QueryHelper.queryInstance;
 /**
  * Contains services for accessing the {@link org.apache.kafka.streams.state.WindowStore}
  */
-@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
-public final class WindowedKeyValueOrderService implements Service<String, Long> {
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+public final class WindowedKeyValueRestaurantService implements Service<String, Long> {
     private static final Serializer<String> STRING_SERIALIZER = Serdes.String().serializer();
     private final @NonNull Storage storage;
 
-    public static WindowedKeyValueOrderService setUp(final KafkaStreams streams) {
+    public static WindowedKeyValueRestaurantService setUp(final KafkaStreams streams) {
         final String storeName = StoreType.WINDOWED_KEY_VALUE.getStoreName();
         log.info("Setting up order service for store '{}'", storeName);
-        return new WindowedKeyValueOrderService(Storage.create(streams, storeName));
+        return new WindowedKeyValueRestaurantService(Storage.create(streams, storeName));
     }
 
     @Override
@@ -75,11 +82,14 @@ public final class WindowedKeyValueOrderService implements Service<String, Long>
         final Collection<StreamsMetadata> streamsMetadata =
                 this.storage.getStreams()
                         .streamsMetadataForStore(this.storage.getStoreName());
+
         return streamsMetadata.stream()
                 .findFirst()
                 .map(metadata -> {
                     final StateQueryResult<KeyValueIterator<Windowed<String>, ValueAndTimestamp<Long>>> stateQueryResult = queryInstance(this.storage, metadata, rangeQuery);
-                    return gatherQueryResults(stateQueryResult).stream().map(ValueAndTimestamp::value).toList();
+                    return gatherQueryResults(stateQueryResult).stream()
+                            .map(kv -> kv.value.value())
+                            .toList();
                 })
                 .orElse(Collections.emptyList());
     }

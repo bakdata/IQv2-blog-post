@@ -3,15 +3,19 @@ package com.bakdata.kafka.example.utils;
 import com.bakdata.kafka.example.read.Storage;
 import lombok.experimental.UtilityClass;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsMetadata;
 import org.apache.kafka.streams.query.Query;
 import org.apache.kafka.streams.query.QueryResult;
 import org.apache.kafka.streams.query.StateQueryRequest;
 import org.apache.kafka.streams.query.StateQueryResult;
 
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Spliterators;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @UtilityClass
 public class QueryHelper {
@@ -48,15 +52,23 @@ public class QueryHelper {
                 .query(queryRequest);
     }
 
-    public static <K, V, R extends Iterator<KeyValue<K, V>>> List<V> gatherQueryResults(final StateQueryResult<R> result) {
-        final Map<Integer, QueryResult<R>> allPartitionsResult =
-                result.getPartitionResults();
-        final List<V> aggregationResult = new ArrayList<>();
-        allPartitionsResult.forEach(
-                (key, queryResult) ->
-                        queryResult.getResult()
-                                .forEachRemaining(kv -> aggregationResult.add(kv.value))
-        );
-        return aggregationResult;
+    /**
+     * Gathers query results from a given StateQueryResult by iterating over all partitions
+     * and collecting the elements from each partition into a list.
+     *
+     * @param <T>              The type of elements contained in the result (e.g., {@code KeyValue<K, V>} or {@code VersionedRecord<V>}).
+     * @param <R>              The type of iterator that provides the result elements.
+     * @param stateQueryResult The state query result containing partitioned results, where each partition contains
+     *                         an iterator of elements.
+     * @return A list of all the elements collected from the partitioned query results.
+     */
+    public static <T, R extends Iterator<T>> List<T> gatherQueryResults(final StateQueryResult<R> stateQueryResult) {
+        final Map<Integer, QueryResult<R>> allPartitionsResult = stateQueryResult.getPartitionResults();
+
+        return allPartitionsResult.values()
+                .stream()
+                .map(QueryResult::getResult)
+                .flatMap(result -> StreamSupport.stream(Spliterators.spliteratorUnknownSize(result, 0), false))
+                .toList();
     }
 }

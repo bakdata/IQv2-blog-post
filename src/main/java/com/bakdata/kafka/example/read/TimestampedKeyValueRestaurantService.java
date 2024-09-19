@@ -10,11 +10,18 @@ import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyQueryMetadata;
 import org.apache.kafka.streams.StreamsMetadata;
-import org.apache.kafka.streams.query.*;
+import org.apache.kafka.streams.query.QueryResult;
+import org.apache.kafka.streams.query.StateQueryRequest;
+import org.apache.kafka.streams.query.StateQueryResult;
+import org.apache.kafka.streams.query.TimestampedKeyQuery;
+import org.apache.kafka.streams.query.TimestampedRangeQuery;
 import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.ValueAndTimestamp;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 import static com.bakdata.kafka.example.utils.QueryHelper.gatherQueryResults;
 import static com.bakdata.kafka.example.utils.QueryHelper.queryInstance;
@@ -22,16 +29,16 @@ import static com.bakdata.kafka.example.utils.QueryHelper.queryInstance;
 /**
  * Contains services for accessing the {@link org.apache.kafka.streams.state.TimestampedKeyValueStore}
  */
-@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
-public final class TimestampedKeyValueOrderService implements Service<String, ValueAndTimestamp<String>> {
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+public final class TimestampedKeyValueRestaurantService implements Service<String, ValueAndTimestamp<String>> {
     private static final Serializer<String> STRING_SERIALIZER = Serdes.String().serializer();
     private final @NonNull Storage storage;
 
-    public static TimestampedKeyValueOrderService setUp(final KafkaStreams streams) {
+    public static TimestampedKeyValueRestaurantService setUp(final KafkaStreams streams) {
         final String storeName = StoreType.TIMESTAMPED_KEY_VALUE.getStoreName();
         log.info("Setting up order service for store '{}'", storeName);
-        return new TimestampedKeyValueOrderService(Storage.create(streams, storeName));
+        return new TimestampedKeyValueRestaurantService(Storage.create(streams, storeName));
     }
 
     @Override
@@ -71,7 +78,9 @@ public final class TimestampedKeyValueOrderService implements Service<String, Va
                 .findFirst()
                 .map(metadata -> {
                     final StateQueryResult<KeyValueIterator<String, ValueAndTimestamp<String>>> stateQueryResult = queryInstance(this.storage, metadata, rangeQuery);
-                    return gatherQueryResults(stateQueryResult);
+                    return gatherQueryResults(stateQueryResult).stream()
+                            .map(kv -> kv.value)
+                            .toList();
                 })
                 .orElse(Collections.emptyList());
     }

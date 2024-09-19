@@ -12,7 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Collection;
 
-import static com.bakdata.kafka.example.KeyValueStoreApplication.MENU_ITEM_DESCRIPTION_TOPIC;
+import static com.bakdata.kafka.example.RestaurantManagmentApplication.MENU_ITEM_DESCRIPTION_TOPIC;
 import static net.mguenther.kafka.junit.EmbeddedKafkaCluster.provisionWith;
 
 @ExtendWith(SoftAssertionsExtension.class)

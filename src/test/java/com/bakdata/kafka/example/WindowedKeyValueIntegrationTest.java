@@ -20,7 +20,7 @@ import java.util.stream.Stream;
 @ExtendWith(SoftAssertionsExtension.class)
 class WindowedKeyValueIntegrationTest extends AbstractIntegrationTest {
     private final Service<String, Long> windowedKeyValueStoreApp =
-            KeyValueStoreApplication.startApplication(StoreType.WINDOWED_KEY_VALUE);
+            RestaurantManagmentApplication.startApplication(StoreType.WINDOWED_KEY_VALUE);
 
     private static Stream<Arguments> getMenuItemAndPriceAndDateTime() {
         return Stream.of(

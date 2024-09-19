@@ -15,7 +15,7 @@ import java.util.Properties;
 
 @Setter
 @Slf4j
-public final class KeyValueStoreApplication implements Runnable {
+public final class RestaurantManagmentApplication implements Runnable {
 
     static final String MENU_ITEM_DESCRIPTION_TOPIC = "menu-item-description-topic";
     private static final String BOOTSTRAP_SERVER = "localhost:9092";
@@ -23,12 +23,12 @@ public final class KeyValueStoreApplication implements Runnable {
     @CommandLine.Option(names = "--service-type")
     private StoreType storeType = StoreType.KEY_VALUE;
 
-    private KeyValueStoreApplication() {
+    private RestaurantManagmentApplication() {
     }
 
     public static void main(final String[] args) {
         log.info("Starting application");
-        new Thread(new KeyValueStoreApplication()).start();
+        new Thread(new RestaurantManagmentApplication()).start();
     }
 
     static <K, V> Service<K, V> startApplication(final StoreType storeType) {
