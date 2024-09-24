@@ -60,10 +60,7 @@ public final class KeyValueRestaurantService implements Service<String, String> 
                 .query(queryRequest)
                 .getOnlyPartitionResult();
 
-        if (onlyPartitionResult != null && onlyPartitionResult.isSuccess()) {
-            return Optional.of(onlyPartitionResult.getResult());
-        }
-        return Optional.empty();
+        return QueryHelper.getQueryResults(onlyPartitionResult);
     }
 
     @Override

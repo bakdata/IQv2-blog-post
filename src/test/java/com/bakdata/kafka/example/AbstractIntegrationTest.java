@@ -1,6 +1,10 @@
 package com.bakdata.kafka.example;
 
-import net.mguenther.kafka.junit.*;
+import net.mguenther.kafka.junit.EmbeddedKafkaCluster;
+import net.mguenther.kafka.junit.EmbeddedKafkaClusterConfig;
+import net.mguenther.kafka.junit.KeyValue;
+import net.mguenther.kafka.junit.SendKeyValuesTransactional;
+import net.mguenther.kafka.junit.TopicConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.assertj.core.api.SoftAssertions;

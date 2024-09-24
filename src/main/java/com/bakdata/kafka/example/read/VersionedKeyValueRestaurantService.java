@@ -24,8 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static com.bakdata.kafka.example.utils.QueryHelper.gatherQueryResults;
-import static com.bakdata.kafka.example.utils.QueryHelper.queryInstance;
+import static com.bakdata.kafka.example.utils.QueryHelper.*;
 
 /**
  * Contains services for accessing the {@link org.apache.kafka.streams.state.VersionedKeyValueStore}
@@ -69,10 +68,8 @@ public final class VersionedKeyValueRestaurantService implements Service<String,
                 .query(queryRequest)
                 .getOnlyPartitionResult();
 
-        if (onlyPartitionResult != null && onlyPartitionResult.isSuccess()) {
-            return Optional.of(onlyPartitionResult.getResult().value());
-        }
-        return Optional.empty();
+        return getQueryResults(onlyPartitionResult)
+                .map(VersionedRecord::value);
     }
 
     @Override

@@ -12,6 +12,7 @@ import org.apache.kafka.streams.query.StateQueryResult;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.Spliterators;
 import java.util.stream.Collectors;
@@ -70,5 +71,14 @@ public class QueryHelper {
                 .map(QueryResult::getResult)
                 .flatMap(result -> StreamSupport.stream(Spliterators.spliteratorUnknownSize(result, 0), false))
                 .toList();
+    }
+
+    public static <T> Optional<T> getQueryResults(final QueryResult<? extends T> onlyPartitionResult) {
+        return hasSuccessfulResult(onlyPartitionResult) ? Optional.of(onlyPartitionResult.getResult())
+                : Optional.empty();
+    }
+
+    private static boolean hasSuccessfulResult(final QueryResult<?> onlyPartitionResult) {
+        return onlyPartitionResult != null && onlyPartitionResult.isSuccess();
     }
 }
