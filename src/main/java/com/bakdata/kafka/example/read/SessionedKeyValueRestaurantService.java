@@ -11,6 +11,7 @@ import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsMetadata;
 import org.apache.kafka.streams.kstream.Window;
 import org.apache.kafka.streams.kstream.Windowed;
+import org.apache.kafka.streams.query.Query;
 import org.apache.kafka.streams.query.StateQueryResult;
 import org.apache.kafka.streams.query.WindowRangeQuery;
 import org.apache.kafka.streams.state.KeyValueIterator;
@@ -52,13 +53,15 @@ public final class SessionedKeyValueRestaurantService implements Service<String,
 
         return streamsMetadata.stream()
                 .findFirst()
-                .map(metadata -> {
-                    final StateQueryResult<KeyValueIterator<Windowed<String>, Long>> stateQueryResult = queryInstance(this.storage, metadata, rangeQuery);
-                    return gatherQueryResults(stateQueryResult).stream()
-                            .map(SessionedKeyValueRestaurantService::toCustomerSession)
-                            .toList();
-                })
+                .map(metadata -> this.getCustomerSessions(metadata, rangeQuery))
                 .orElse(Collections.emptyList());
+    }
+
+    private List<CustomerSession> getCustomerSessions(final StreamsMetadata metadata, final Query<KeyValueIterator<Windowed<String>, Long>> rangeQuery) {
+        final StateQueryResult<KeyValueIterator<Windowed<String>, Long>> stateQueryResult = queryInstance(this.storage, metadata, rangeQuery);
+        return gatherQueryResults(stateQueryResult).stream()
+                .map(SessionedKeyValueRestaurantService::toCustomerSession)
+                .toList();
     }
 
     @Override

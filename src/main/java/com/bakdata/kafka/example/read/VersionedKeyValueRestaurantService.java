@@ -64,11 +64,11 @@ public final class VersionedKeyValueRestaurantService implements Service<String,
                 .withPartitions(Collections.singleton(keyQueryMetadata.partition()))
                 .enableExecutionInfo();
 
-        final QueryResult<VersionedRecord<Integer>> onlyPartitionResult = this.storage.getStreams()
+        final QueryResult<VersionedRecord<Integer>> queryResult = this.storage.getStreams()
                 .query(queryRequest)
                 .getOnlyPartitionResult();
 
-        return getQueryResults(onlyPartitionResult)
+        return getQueryResults(queryResult)
                 .map(VersionedRecord::value);
     }
 

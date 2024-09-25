@@ -73,8 +73,16 @@ public class QueryHelper {
                 .toList();
     }
 
-    public static <T> Optional<T> getQueryResults(final QueryResult<? extends T> onlyPartitionResult) {
-        return hasSuccessfulResult(onlyPartitionResult) ? Optional.of(onlyPartitionResult.getResult())
+    /**
+     * Retrieves the result from a {@link QueryResult} if it has a successful result.
+     *
+     * @param <T>         the type of the result object
+     * @param queryResult the {@link QueryResult} containing the result
+     * @return an {@link Optional} containing the result if the query was successful, otherwise {@link Optional#empty()}
+     */
+    public static <T> Optional<T> getQueryResults(final QueryResult<? extends T> queryResult) {
+        return hasSuccessfulResult(queryResult)
+                ? Optional.of(queryResult.getResult())
                 : Optional.empty();
     }
 

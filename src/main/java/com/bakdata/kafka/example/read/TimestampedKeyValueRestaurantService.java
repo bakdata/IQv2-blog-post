@@ -55,11 +55,11 @@ public final class TimestampedKeyValueRestaurantService implements Service<Strin
                         .withPartitions(Collections.singleton(keyQueryMetadata.partition()))
                         .enableExecutionInfo();
 
-        final QueryResult<ValueAndTimestamp<String>> onlyPartitionResult = this.storage.getStreams()
+        final QueryResult<ValueAndTimestamp<String>> queryResult = this.storage.getStreams()
                 .query(queryRequest)
                 .getOnlyPartitionResult();
 
-        return getQueryResults(onlyPartitionResult);
+        return getQueryResults(queryResult);
     }
 
     @Override

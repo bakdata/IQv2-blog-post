@@ -73,14 +73,16 @@ public final class KeyValueRestaurantService implements Service<String, String> 
 
         return streamsMetadata.stream()
                 .findFirst()
-                .map(metadata -> {
-                    final StateQueryResult<KeyValueIterator<String, String>> stateQueryResult = queryInstance(this.storage, metadata, rangeQuery);
-                    return QueryHelper.gatherQueryResults(stateQueryResult)
-                            .stream()
-                            .map(kv -> kv.value)
-                            .toList();
-                })
+                .map(metadata -> this.getMenuItemDescriptions(metadata, rangeQuery))
                 .orElse(Collections.emptyList());
+    }
+
+    private List<String> getMenuItemDescriptions(final StreamsMetadata metadata, final Query<KeyValueIterator<String, String>> rangeQuery) {
+        final StateQueryResult<KeyValueIterator<String, String>> stateQueryResult = queryInstance(this.storage, metadata, rangeQuery);
+        return QueryHelper.gatherQueryResults(stateQueryResult)
+                .stream()
+                .map(kv -> kv.value)
+                .toList();
     }
 
     @Override
