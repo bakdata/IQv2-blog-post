@@ -1,11 +1,10 @@
 plugins {
     java
     id("io.freefair.lombok") version "8.6"
-    id("com.github.davidmc24.gradle.plugin.avro") version "1.9.1"
 }
 
 group = "com.bakdata.kafka.example"
-version = "1.0.0-SNAPSHOT"
+version = "1.0.0"
 
 repositories {
     mavenCentral()
@@ -17,14 +16,10 @@ dependencies {
     implementation(group = "org.apache.kafka", name = "kafka-streams", version = kafkaVersion)
     implementation(group = "org.apache.kafka", name = "kafka-clients", version = kafkaVersion)
 
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")
-
-    implementation(group = "io.javalin", name = "javalin", version = "6.1.3")
-
     val confluentVersion = "7.6.0"
     implementation(group = "io.confluent", name = "kafka-streams-avro-serde", version = confluentVersion)
 
-    implementation(group = "info.picocli", name = "picocli", version = "4.7.5")
+    implementation(group = "com.fasterxml.jackson.core", name = "jackson-databind", version = "2.17.2")
 
     val log4jVersion = "2.23.1"
     implementation(group = "org.apache.logging.log4j", name = "log4j-slf4j2-impl", version = log4jVersion)

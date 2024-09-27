@@ -20,7 +20,7 @@ import java.util.stream.Stream;
 @ExtendWith(SoftAssertionsExtension.class)
 class WindowedKeyValueIntegrationTest extends AbstractIntegrationTest {
     private final Service<String, Long> windowedKeyValueStoreApp =
-            RestaurantManagmentApplication.startApplication(StoreType.WINDOWED_KEY_VALUE);
+            RestaurantManagementApplication.startApplication(StoreType.WINDOWED_KEY_VALUE);
 
     private static Stream<Arguments> getMenuItemAndPriceAndDateTime() {
         return Stream.of(
@@ -101,7 +101,7 @@ class WindowedKeyValueIntegrationTest extends AbstractIntegrationTest {
     void shouldQueryCorrectWhenRangeQueryIsRequested() throws InterruptedException {
         Thread.sleep(10000);
         final List<Long> aggregatedOrder = this.windowedKeyValueStoreApp
-                .getWindowedRange(Instant.ofEpochMilli(3_600_000), Instant.ofEpochMilli(3_600_010));
+                .getWindowedRange(Instant.ofEpochMilli(3_600_000), Instant.ofEpochMilli(7200009));
 
         this.softly.assertThat(aggregatedOrder)
                 .hasSize(2)

@@ -28,7 +28,7 @@ import org.apache.kafka.streams.kstream.Windowed;
 
 import java.time.Duration;
 
-import static com.bakdata.kafka.example.RestaurantManagmentApplication.MENU_ITEM_DESCRIPTION_TOPIC;
+import static com.bakdata.kafka.example.RestaurantManagementApplication.MENU_ITEM_DESCRIPTION_TOPIC;
 
 /**
  * {@code StoreType} is an enum representing different types of state stores that can be used in a Kafka Streams application.

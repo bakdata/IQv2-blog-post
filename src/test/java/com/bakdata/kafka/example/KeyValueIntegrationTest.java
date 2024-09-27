@@ -11,7 +11,7 @@ import java.util.Optional;
 
 class KeyValueIntegrationTest extends AbstractIntegrationTest {
     private final Service<String, String> keyValueStoreApp =
-            RestaurantManagmentApplication.startApplication(StoreType.KEY_VALUE);
+            RestaurantManagementApplication.startApplication(StoreType.KEY_VALUE);
 
     @Override
     protected Collection<KeyValue<String, String>> createRecords() {

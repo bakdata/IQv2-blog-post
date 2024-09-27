@@ -9,26 +9,24 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
-import picocli.CommandLine;
 
 import java.util.Properties;
 
 @Setter
 @Slf4j
-public final class RestaurantManagmentApplication implements Runnable {
+public final class RestaurantManagementApplication implements Runnable {
 
     static final String MENU_ITEM_DESCRIPTION_TOPIC = "menu-item-description-topic";
     private static final String BOOTSTRAP_SERVER = "localhost:9092";
 
-    @CommandLine.Option(names = "--service-type")
     private StoreType storeType = StoreType.KEY_VALUE;
 
-    private RestaurantManagmentApplication() {
+    private RestaurantManagementApplication() {
     }
 
     public static void main(final String[] args) {
         log.info("Starting application");
-        new Thread(new RestaurantManagmentApplication()).start();
+        new Thread(new RestaurantManagementApplication()).start();
     }
 
     static <K, V> Service<K, V> startApplication(final StoreType storeType) {

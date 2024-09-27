@@ -13,7 +13,7 @@ import java.util.Optional;
 class TimestampedKeyValueIntegrationTest extends AbstractIntegrationTest {
 
     private final Service<String, ValueAndTimestamp<String>> timestampedKeyValueStoreApp =
-            RestaurantManagmentApplication.startApplication(StoreType.TIMESTAMPED_KEY_VALUE);
+            RestaurantManagementApplication.startApplication(StoreType.TIMESTAMPED_KEY_VALUE);
 
     @Override
     protected Collection<KeyValue<String, String>> createRecords() {
