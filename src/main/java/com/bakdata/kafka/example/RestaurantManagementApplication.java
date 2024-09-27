@@ -16,8 +16,9 @@ import java.util.Properties;
 @Slf4j
 public final class RestaurantManagementApplication implements Runnable {
 
-    static final String MENU_ITEM_DESCRIPTION_TOPIC = "menu-item-description-topic";
+    static final String MENU_ITEM_DESCRIPTION_TOPIC = "restaurant-management-input-topic";
     private static final String BOOTSTRAP_SERVER = "localhost:9092";
+    private static final String APPLICATION_HOST_PORT = "localhost:8080";
 
     private StoreType storeType = StoreType.KEY_VALUE;
 
@@ -61,18 +62,12 @@ public final class RestaurantManagementApplication implements Runnable {
         streamsConfiguration.setProperty(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVER);
         streamsConfiguration.setProperty(StreamsConfig.producerPrefix(ProducerConfig.COMPRESSION_TYPE_CONFIG), "gzip");
 
-        streamsConfiguration.setProperty(StreamsConfig.APPLICATION_SERVER_CONFIG, "localhost:8080");
+        streamsConfiguration.setProperty(StreamsConfig.APPLICATION_SERVER_CONFIG, APPLICATION_HOST_PORT);
 
-        configureDefaultSerde(streamsConfiguration);
-        streamsConfiguration.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 100);
-        streamsConfiguration.put(StreamsConfig.STATESTORE_CACHE_MAX_BYTES_CONFIG, 0);
-        streamsConfiguration.setProperty(StreamsConfig.STATE_DIR_CONFIG, TestUtils.tempDirectory().getAbsolutePath());
-        return streamsConfiguration;
-    }
-
-    private static void configureDefaultSerde(final Properties streamsConfiguration) {
         streamsConfiguration.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.StringSerde.class);
         streamsConfiguration.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.StringSerde.class);
+        streamsConfiguration.setProperty(StreamsConfig.STATE_DIR_CONFIG, TestUtils.tempDirectory().getAbsolutePath());
+        return streamsConfiguration;
     }
 
     @Override

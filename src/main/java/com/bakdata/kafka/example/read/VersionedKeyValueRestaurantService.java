@@ -84,15 +84,14 @@ public final class VersionedKeyValueRestaurantService implements Service<String,
                 this.storage.getStreams()
                         .streamsMetadataForStore(this.storage.getStoreName());
 
-        return streamsMetadata.stream()
-                .findFirst()
-                .map(metadata -> {
-                    final StateQueryResult<VersionedRecordIterator<Integer>> stateQueryResult = queryInstance(this.storage, metadata, multiVersionedKeyQuery);
-                    return gatherQueryResults(stateQueryResult).stream()
-                            .map(VersionedRecord::value)
-                            .toList();
-                })
-                .orElse(Collections.emptyList());
+        return executeQuery(streamsMetadata, metadata -> this.getPrice(metadata, multiVersionedKeyQuery));
+    }
+
+    private List<Integer> getPrice(final StreamsMetadata metadata, final MultiVersionedKeyQuery<String, Integer> multiVersionedKeyQuery) {
+        final StateQueryResult<VersionedRecordIterator<Integer>> stateQueryResult = queryInstance(this.storage, metadata, multiVersionedKeyQuery);
+        return gatherQueryResults(stateQueryResult).stream()
+                .map(VersionedRecord::value)
+                .toList();
     }
 
     @Override

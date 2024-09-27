@@ -9,12 +9,15 @@ import org.apache.kafka.streams.query.QueryResult;
 import org.apache.kafka.streams.query.StateQueryRequest;
 import org.apache.kafka.streams.query.StateQueryResult;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Spliterators;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -84,6 +87,27 @@ public class QueryHelper {
         return hasSuccessfulResult(queryResult)
                 ? Optional.of(queryResult.getResult())
                 : Optional.empty();
+    }
+
+    /**
+     * Executes a query on the first available {@link StreamsMetadata} in the provided collection.
+     * <p>
+     * <b>{@code findFirst} only works because in our scenario we don't consider multiple running instances.</b>
+     *
+     * <p>This method takes a collection of {@link StreamsMetadata} and a function that defines
+     * how to extract or transform the metadata into a list of results. The function is applied to
+     * the first element in the collection, if present. If no metadata is available, an empty list is returned.
+     *
+     * @param <V>             the type of the result contained in the list
+     * @param streamsMetadata a collection of {@link StreamsMetadata} to search through
+     * @param function        a function that defines how to query the {@link StreamsMetadata} and extract a list of results
+     * @return a list of results produced by the function, or an empty list if no metadata is found
+     */
+    public static <V> List<V> executeQuery(final Collection<? extends StreamsMetadata> streamsMetadata, final Function<? super StreamsMetadata, List<V>> function) {
+        return streamsMetadata.stream()
+                .findFirst()
+                .map(function)
+                .orElse(Collections.emptyList());
     }
 
     private static boolean hasSuccessfulResult(final QueryResult<?> onlyPartitionResult) {

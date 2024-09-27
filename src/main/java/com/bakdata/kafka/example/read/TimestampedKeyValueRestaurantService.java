@@ -70,15 +70,14 @@ public final class TimestampedKeyValueRestaurantService implements Service<Strin
                 this.storage.getStreams()
                         .streamsMetadataForStore(this.storage.getStoreName());
 
-        return streamsMetadata.stream()
-                .findFirst()
-                .map(metadata -> {
-                    final StateQueryResult<KeyValueIterator<String, ValueAndTimestamp<String>>> stateQueryResult = queryInstance(this.storage, metadata, rangeQuery);
-                    return gatherQueryResults(stateQueryResult).stream()
-                            .map(kv -> kv.value)
-                            .toList();
-                })
-                .orElse(Collections.emptyList());
+        return executeQuery(streamsMetadata, metadata -> this.getValueAndTimestamps(metadata, rangeQuery));
+    }
+
+    private List<ValueAndTimestamp<String>> getValueAndTimestamps(final StreamsMetadata metadata, final TimestampedRangeQuery<String, String> rangeQuery) {
+        final StateQueryResult<KeyValueIterator<String, ValueAndTimestamp<String>>> stateQueryResult = queryInstance(this.storage, metadata, rangeQuery);
+        return gatherQueryResults(stateQueryResult).stream()
+                .map(kv -> kv.value)
+                .toList();
     }
 
 

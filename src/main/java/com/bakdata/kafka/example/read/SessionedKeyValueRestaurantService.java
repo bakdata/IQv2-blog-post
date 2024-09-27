@@ -2,6 +2,7 @@ package com.bakdata.kafka.example.read;
 
 import com.bakdata.kafka.example.StoreType;
 import com.bakdata.kafka.example.model.CustomerSession;
+import com.bakdata.kafka.example.utils.QueryHelper;
 import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +18,6 @@ import org.apache.kafka.streams.query.WindowRangeQuery;
 import org.apache.kafka.streams.state.KeyValueIterator;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 import static com.bakdata.kafka.example.utils.QueryHelper.gatherQueryResults;
@@ -51,10 +51,7 @@ public final class SessionedKeyValueRestaurantService implements Service<String,
                 this.storage.getStreams()
                         .streamsMetadataForStore(this.storage.getStoreName());
 
-        return streamsMetadata.stream()
-                .findFirst()
-                .map(metadata -> this.getCustomerSessions(metadata, rangeQuery))
-                .orElse(Collections.emptyList());
+        return QueryHelper.executeQuery(streamsMetadata, metadata -> this.getCustomerSessions(metadata, rangeQuery));
     }
 
     private List<CustomerSession> getCustomerSessions(final StreamsMetadata metadata, final Query<KeyValueIterator<Windowed<String>, Long>> rangeQuery) {

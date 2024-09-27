@@ -1,6 +1,7 @@
 package com.bakdata.kafka.example.read;
 
 import com.bakdata.kafka.example.StoreType;
+import com.bakdata.kafka.example.utils.QueryHelper;
 import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -83,15 +84,14 @@ public final class WindowedKeyValueRestaurantService implements Service<String, 
                 this.storage.getStreams()
                         .streamsMetadataForStore(this.storage.getStoreName());
 
-        return streamsMetadata.stream()
-                .findFirst()
-                .map(metadata -> {
-                    final StateQueryResult<KeyValueIterator<Windowed<String>, ValueAndTimestamp<Long>>> stateQueryResult = queryInstance(this.storage, metadata, rangeQuery);
-                    return gatherQueryResults(stateQueryResult).stream()
-                            .map(kv -> kv.value.value())
-                            .toList();
-                })
-                .orElse(Collections.emptyList());
+        return QueryHelper.executeQuery(streamsMetadata, metadata -> this.windowCounts(metadata, rangeQuery));
+    }
+
+    private List<Long> windowCounts(final StreamsMetadata metadata, final WindowRangeQuery<String, ValueAndTimestamp<Long>> rangeQuery) {
+        final StateQueryResult<KeyValueIterator<Windowed<String>, ValueAndTimestamp<Long>>> stateQueryResult = queryInstance(this.storage, metadata, rangeQuery);
+        return gatherQueryResults(stateQueryResult).stream()
+                .map(kv -> kv.value.value())
+                .toList();
     }
 
     @Override

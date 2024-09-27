@@ -71,10 +71,7 @@ public final class KeyValueRestaurantService implements Service<String, String> 
                 this.storage.getStreams()
                         .streamsMetadataForStore(this.storage.getStoreName());
 
-        return streamsMetadata.stream()
-                .findFirst()
-                .map(metadata -> this.getMenuItemDescriptions(metadata, rangeQuery))
-                .orElse(Collections.emptyList());
+        return QueryHelper.executeQuery(streamsMetadata, metadata -> this.getMenuItemDescriptions(metadata, rangeQuery));
     }
 
     private List<String> getMenuItemDescriptions(final StreamsMetadata metadata, final Query<KeyValueIterator<String, String>> rangeQuery) {
