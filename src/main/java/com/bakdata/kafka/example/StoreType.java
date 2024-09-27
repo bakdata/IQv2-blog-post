@@ -28,8 +28,6 @@ import org.apache.kafka.streams.kstream.Windowed;
 
 import java.time.Duration;
 
-import static com.bakdata.kafka.example.RestaurantManagementApplication.MENU_ITEM_DESCRIPTION_TOPIC;
-
 /**
  * {@code StoreType} is an enum representing different types of state stores that can be used in a Kafka Streams application.
  * Each store type provides its own implementation for setting up the query service and building the stream topology.
@@ -55,8 +53,8 @@ public enum StoreType {
         }
 
         @Override
-        public void addTopology(final StreamsBuilder builder) {
-            final KStream<String, String> inputStream = builder.stream(MENU_ITEM_DESCRIPTION_TOPIC);
+        public void addTopology(final StreamsBuilder builder, final String inputTopic) {
+            final KStream<String, String> inputStream = builder.stream(inputTopic);
 
             inputStream.toTable(Materialized.as(this.getStoreName()));
         }
@@ -68,8 +66,8 @@ public enum StoreType {
         }
 
         @Override
-        public void addTopology(final StreamsBuilder builder) {
-            final KStream<String, String> inputStream = builder.stream(MENU_ITEM_DESCRIPTION_TOPIC);
+        public void addTopology(final StreamsBuilder builder, final String inputTopic) {
+            final KStream<String, String> inputStream = builder.stream(inputTopic);
 
             inputStream.processValues(new WriteTimestampedKeyValueDataProcessorSupplier());
         }
@@ -81,8 +79,8 @@ public enum StoreType {
         }
 
         @Override
-        public void addTopology(final StreamsBuilder builder) {
-            final KStream<String, String> inputStream = builder.stream(MENU_ITEM_DESCRIPTION_TOPIC);
+        public void addTopology(final StreamsBuilder builder, final String inputTopic) {
+            final KStream<String, String> inputStream = builder.stream(inputTopic);
             inputStream.processValues(new WriteVersionedKeyValueDataProcessorSupplier());
         }
 
@@ -94,9 +92,9 @@ public enum StoreType {
         }
 
         @Override
-        public void addTopology(final StreamsBuilder builder) {
+        public void addTopology(final StreamsBuilder builder, final String inputTopic) {
             final KStream<String, String> inputStream =
-                    builder.stream(MENU_ITEM_DESCRIPTION_TOPIC, Consumed.with(new OrderTimeExtractor()));
+                    builder.stream(inputTopic, Consumed.with(new OrderTimeExtractor()));
 
             final KGroupedStream<String, String> groupedFoodOrders =
                     inputStream
@@ -110,16 +108,17 @@ public enum StoreType {
                     .peek(((key, value) -> log.debug("Count '{}', '{}' from '{}' to '{}'", value, key.key(), key.window().start(), key.window().end())));
         }
 
-    }, SESSION_KEY_VALUE("session-kv-store") {
+    },
+    SESSION_KEY_VALUE("session-kv-store") {
         @Override
         public <K, V> Service<K, V> createQueryService(final KafkaStreams streams) {
             return (Service<K, V>) SessionedKeyValueRestaurantService.setUp(streams);
         }
 
         @Override
-        public void addTopology(final StreamsBuilder builder) {
+        public void addTopology(final StreamsBuilder builder, final String inputTopic) {
             final KStream<String, String> inputStream =
-                    builder.stream(MENU_ITEM_DESCRIPTION_TOPIC, Consumed.with(new OrderTimeExtractor()));
+                    builder.stream(inputTopic, Consumed.with(new OrderTimeExtractor()));
 
             final KGroupedStream<String, String> groupedFoodOrders =
                     inputStream.groupBy(((key, value) -> Utils.readToObject(value, Order.class).customerId()));
@@ -141,6 +140,7 @@ public enum StoreType {
                     });
         }
     };
+
     private final String storeName;
 
     /**
@@ -149,15 +149,16 @@ public enum StoreType {
      * @param streams The Kafka Streams instance used for querying state.
      * @param <K>     The key type of the store.
      * @param <V>     The value type of the store.
-     * @return A {@code Service} for querying the store.
+     * @return A {@link Service} for querying the store.
      */
     public abstract <K, V> Service<K, V> createQueryService(final KafkaStreams streams);
 
     /**
      * Abstract method to add a topology to the Kafka Streams builder for this specific store type.
      *
-     * @param builder The Kafka Streams builder to which the topology will be added.
+     * @param builder    The Kafka Streams builder to which the topology will be added.
+     * @param inputTopic the input topic name.
      */
-    public abstract void addTopology(final StreamsBuilder builder);
+    public abstract void addTopology(final StreamsBuilder builder, final String inputTopic);
 
 }

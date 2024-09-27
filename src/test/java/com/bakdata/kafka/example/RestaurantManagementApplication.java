@@ -37,7 +37,7 @@ public final class RestaurantManagementApplication implements Runnable {
         // Define the processing topology of the Streams application.
         final StreamsBuilder builder = new StreamsBuilder();
 
-        storeType.addTopology(builder);
+        storeType.addTopology(builder, MENU_ITEM_DESCRIPTION_TOPIC);
 
         final KafkaStreams streams = new KafkaStreams(builder.build(), streamsConfiguration);
 
