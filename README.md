@@ -1,6 +1,6 @@
 # IQv2 Blog Post
 
-This is the code repository of the blog post [TODO: link and title to blog post].
+This is the code repository of the blog post [Unlocking IQv2 in Kafka Streams: Navigating Queries and State Stores for Real-Time Insights](https://medium.com/bakdata/harnessing-interactive-queries-v2-in-kafka-streams-a-practical-guide-to-queries-and-state-stores-4585f1e53150).
 
 ## Run
 
