@@ -1,6 +1,6 @@
 # IQv2 Blog Post
 
-This is the code repository of the blog post [TODO: link and title to blog post].
+This is the code repository of the blog post [Unlocking IQv2 in Kafka Streams: Navigating Queries and State Stores for Real-Time Insights](https://medium.com/bakdata/harnessing-interactive-queries-v2-in-kafka-streams-a-practical-guide-to-queries-and-state-stores-4585f1e53150).
 
 ## Run
 
@@ -21,7 +21,7 @@ Run tests:
 
 First start with the tests and understand the input and expected output of each test case. Afterward, a good starting
 point to navigate through the code is the enum
-factory [StoreType](https://github.com/bakdata/IQv2-blog-post-private/blob/ec6d3eba818b23dd7734202d39f6b7ed29875ef8/src/main/java/com/bakdata/kafka/example/StoreType.java#L19-L19).
+factory [StoreType](https://github.com/bakdata/IQv2-blog-post/blob/ec6d3eba818b23dd7734202d39f6b7ed29875ef8/src/main/java/com/bakdata/kafka/example/StoreType.java#L25).
 This enum implements and creates each state store's write and read logic.
 
 Most of the state stores use the high-level DSL to materialize the stream into a table. The TimestampedKeyValueStore and
